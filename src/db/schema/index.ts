@@ -1,2 +1,10 @@
-// Schema definitions are added in issue #3.
-// This file is the barrel export for all Drizzle table definitions.
+export * from './seasons'
+export * from './games'
+export * from './players'
+export * from './rosters'
+export * from './position_preferences'
+export * from './rsvps'
+export * from './fielding_slots'
+export * from './batting_slots'
+export * from './position_history'
+export * from './batting_history'
