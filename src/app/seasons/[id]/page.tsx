@@ -1,8 +1,9 @@
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { db } from '@/db'
-import { games, seasons } from '@/db/schema'
+import { games, players, rosters, seasons } from '@/db/schema'
 import { eq } from 'drizzle-orm'
+import RosterManager from './RosterManager'
 
 export default async function SeasonPage({
   params,
@@ -20,6 +21,14 @@ export default async function SeasonPage({
     .where(eq(games.seasonId, id))
     .orderBy(games.date)
 
+  const rosterRows = await db
+    .select({ player: players })
+    .from(rosters)
+    .innerJoin(players, eq(rosters.playerId, players.id))
+    .where(eq(rosters.seasonId, id))
+
+  const roster = rosterRows.map((r) => r.player)
+
   return (
     <div className="max-w-2xl mx-auto px-4 py-8">
       <div className="mb-6">
@@ -31,7 +40,7 @@ export default async function SeasonPage({
       <h1 className="text-2xl font-semibold mb-1">{season.name}</h1>
       <p className="text-sm text-zinc-500 mb-8">{season.gameCount} games</p>
 
-      <section>
+      <section className="mb-10">
         <h2 className="text-sm font-medium text-zinc-500 uppercase tracking-wide mb-3">
           Games
         </h2>
@@ -56,12 +65,7 @@ export default async function SeasonPage({
         )}
       </section>
 
-      <section className="mt-10">
-        <h2 className="text-sm font-medium text-zinc-500 uppercase tracking-wide mb-3">
-          Roster
-        </h2>
-        <p className="text-zinc-400 text-sm">Roster management coming soon.</p>
-      </section>
+      <RosterManager seasonId={id} initialRoster={roster} />
     </div>
   )
 }
