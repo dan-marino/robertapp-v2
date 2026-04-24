@@ -1,8 +1,10 @@
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { db } from '@/db'
-import { games, seasons } from '@/db/schema'
+import { games, players, rosters, rsvps, seasons } from '@/db/schema'
 import { eq } from 'drizzle-orm'
+import RSVPManager from './RSVPManager'
+import type { RSVPStatus } from '@/domain/types'
 
 export default async function GamePage({
   params,
@@ -15,6 +17,20 @@ export default async function GamePage({
   if (!game) notFound()
 
   const [season] = await db.select().from(seasons).where(eq(seasons.id, game.seasonId))
+
+  const rosterRows = await db
+    .select({ player: players })
+    .from(rosters)
+    .innerJoin(players, eq(rosters.playerId, players.id))
+    .where(eq(rosters.seasonId, game.seasonId))
+
+  const rsvpRows = await db.select().from(rsvps).where(eq(rsvps.gameId, id))
+  const rsvpMap = new Map(rsvpRows.map((r) => [r.playerId, r.status as RSVPStatus]))
+
+  const initialRsvps = rosterRows.map(({ player }) => ({
+    player,
+    status: rsvpMap.get(player.id) ?? null,
+  }))
 
   return (
     <div className="max-w-2xl mx-auto px-4 py-8">
@@ -36,7 +52,7 @@ export default async function GamePage({
         <h2 className="text-sm font-medium text-zinc-500 uppercase tracking-wide mb-3">
           RSVPs
         </h2>
-        <p className="text-zinc-400 text-sm">RSVP management coming in the next issue.</p>
+        <RSVPManager gameId={id} initialRsvps={initialRsvps} />
       </section>
 
       <section>
