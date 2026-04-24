@@ -4,6 +4,7 @@ import { db } from '@/db'
 import { games, players, rosters, seasons } from '@/db/schema'
 import { eq } from 'drizzle-orm'
 import RosterManager from './RosterManager'
+import GameCreator from './GameCreator'
 
 export default async function SeasonPage({
   params,
@@ -44,10 +45,8 @@ export default async function SeasonPage({
         <h2 className="text-sm font-medium text-zinc-500 uppercase tracking-wide mb-3">
           Games
         </h2>
-        {seasonGames.length === 0 ? (
-          <p className="text-zinc-400 text-sm">No games yet.</p>
-        ) : (
-          <ul className="divide-y divide-zinc-100 border border-zinc-100 rounded-lg overflow-hidden">
+        {seasonGames.length > 0 && (
+          <ul className="divide-y divide-zinc-100 border border-zinc-100 rounded-lg overflow-hidden mb-4">
             {seasonGames.map((game) => (
               <li key={game.id}>
                 <Link
@@ -63,6 +62,7 @@ export default async function SeasonPage({
             ))}
           </ul>
         )}
+        <GameCreator seasonId={id} />
       </section>
 
       <RosterManager seasonId={id} initialRoster={roster} />
