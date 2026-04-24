@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import type { RSVPStatus } from '@/domain/types'
+import GuestAdder from './GuestAdder'
 
 interface Player {
   id: string
@@ -40,6 +41,16 @@ export default function RSVPManager({ gameId, initialRsvps }: Props) {
     setSaved(false)
   }
 
+  async function handleRemoveGuest(guestId: string) {
+    await fetch(`/api/games/${gameId}/guests/${guestId}`, { method: 'DELETE' })
+    setRsvps((prev) => prev.filter((r) => r.player.id !== guestId))
+  }
+
+  function handleGuestAdded(guest: Player) {
+    setRsvps((prev) => [...prev, { player: guest, status: 'Present' }])
+    setSaved(false)
+  }
+
   async function handleSave() {
     setSaving(true)
     await fetch(`/api/games/${gameId}/rsvps`, {
@@ -57,31 +68,46 @@ export default function RSVPManager({ gameId, initialRsvps }: Props) {
 
   return (
     <div>
-      <ul className="divide-y divide-zinc-100 border border-zinc-100 rounded-lg overflow-hidden mb-4">
-        {rsvps.map(({ player, status }) => (
-          <li key={player.id} className="flex items-center justify-between px-4 py-3">
-            <span className="text-sm font-medium">
-              {player.name}
-              <span className="ml-2 text-xs text-zinc-400">{player.gender}</span>
-            </span>
-            <div className="flex gap-1">
-              {STATUSES.map((s) => (
-                <button
-                  key={s}
-                  onClick={() => setStatus(player.id, s)}
-                  className={`px-2 py-1 text-xs rounded border font-medium transition-colors ${
-                    status === s
-                      ? STATUS_COLORS[s]
-                      : 'bg-zinc-50 text-zinc-400 border-zinc-200 hover:border-zinc-400'
-                  }`}
-                >
-                  {s}
-                </button>
-              ))}
-            </div>
-          </li>
-        ))}
-      </ul>
+      {rsvps.length > 0 && (
+        <ul className="divide-y divide-zinc-100 border border-zinc-100 rounded-lg overflow-hidden mb-4">
+          {rsvps.map(({ player, status }) => (
+            <li key={player.id} className="flex items-center justify-between px-4 py-3">
+              <span className="text-sm font-medium flex items-center gap-2">
+                {player.name}
+                <span className="text-xs text-zinc-400">{player.gender}</span>
+                {player.isGuest && (
+                  <span className="text-xs bg-zinc-100 text-zinc-500 px-1.5 py-0.5 rounded">
+                    Guest
+                  </span>
+                )}
+              </span>
+              <div className="flex items-center gap-1">
+                {STATUSES.map((s) => (
+                  <button
+                    key={s}
+                    onClick={() => setStatus(player.id, s)}
+                    className={`px-2 py-1 text-xs rounded border font-medium transition-colors ${
+                      status === s
+                        ? STATUS_COLORS[s]
+                        : 'bg-zinc-50 text-zinc-400 border-zinc-200 hover:border-zinc-400'
+                    }`}
+                  >
+                    {s}
+                  </button>
+                ))}
+                {player.isGuest && (
+                  <button
+                    onClick={() => handleRemoveGuest(player.id)}
+                    className="ml-2 text-xs text-red-400 hover:text-red-600"
+                  >
+                    ✕
+                  </button>
+                )}
+              </div>
+            </li>
+          ))}
+        </ul>
+      )}
 
       {rsvps.length === 0 && (
         <p className="text-zinc-400 text-sm mb-4">No players on roster yet.</p>
@@ -94,6 +120,8 @@ export default function RSVPManager({ gameId, initialRsvps }: Props) {
       >
         {saving ? 'Saving…' : saved ? 'Saved' : 'Save RSVPs'}
       </button>
+
+      <GuestAdder gameId={gameId} onGuestAdded={handleGuestAdded} />
     </div>
   )
 }

@@ -2,7 +2,7 @@ import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { db } from '@/db'
 import { games, players, rosters, rsvps, seasons } from '@/db/schema'
-import { eq } from 'drizzle-orm'
+import { eq, inArray } from 'drizzle-orm'
 import RSVPManager from './RSVPManager'
 import type { RSVPStatus } from '@/domain/types'
 
@@ -27,7 +27,22 @@ export default async function GamePage({
   const rsvpRows = await db.select().from(rsvps).where(eq(rsvps.gameId, id))
   const rsvpMap = new Map(rsvpRows.map((r) => [r.playerId, r.status as RSVPStatus]))
 
-  const initialRsvps = rosterRows.map(({ player }) => ({
+  // Also include guests (players with isGuest=true who have an RSVP for this game)
+  const guestIds = rsvpRows
+    .map((r) => r.playerId)
+    .filter((pid) => !rosterRows.some((row) => row.player.id === pid))
+
+  const guestRows =
+    guestIds.length > 0
+      ? await db.select().from(players).where(inArray(players.id, guestIds))
+      : []
+
+  const allPlayers = [
+    ...rosterRows.map((r) => r.player),
+    ...guestRows.filter((g) => g.isGuest),
+  ]
+
+  const initialRsvps = allPlayers.map((player) => ({
     player,
     status: rsvpMap.get(player.id) ?? null,
   }))
