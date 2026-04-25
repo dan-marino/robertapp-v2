@@ -3,8 +3,8 @@ import { notFound } from 'next/navigation'
 import { db } from '@/db'
 import { games, players, fieldingSlots, battingSlots, seasons } from '@/db/schema'
 import { eq, inArray } from 'drizzle-orm'
-import { ALL_POSITIONS } from '@/domain/types'
 import GenerateLineupButton from './GenerateLineupButton'
+import LineupSwapGrid from './LineupSwapGrid'
 
 export default async function LineupPage({
   params,
@@ -16,7 +16,7 @@ export default async function LineupPage({
   const [game] = await db.select().from(games).where(eq(games.id, gameId))
   if (!game) notFound()
 
-  const [season] = await db.select().from(seasons).where(eq(seasons.id, game.seasonId))
+  await db.select().from(seasons).where(eq(seasons.id, game.seasonId))
 
   const [fs, bs] = await Promise.all([
     db.select().from(fieldingSlots).where(eq(fieldingSlots.gameId, gameId)),
@@ -28,15 +28,11 @@ export default async function LineupPage({
     playerIds.length > 0
       ? await db.select().from(players).where(inArray(players.id, playerIds))
       : []
-  const playerMap = new Map(playerRows.map((p) => [p.id, p.name]))
+  const playerMap: Record<string, string> = Object.fromEntries(
+    playerRows.map((p) => [p.id, p.name])
+  )
 
   const innings = [...new Set(fs.map((s) => s.inning))].sort((a, b) => a - b)
-  const gridMap = new Map<string, string>()
-  for (const slot of fs) {
-    gridMap.set(`${slot.inning}:${slot.position}`, playerMap.get(slot.playerId) ?? slot.playerId)
-  }
-
-  const sortedBatting = [...bs].sort((a, b) => a.orderIndex - b.orderIndex)
   const hasLineup = fs.length > 0 || bs.length > 0
 
   return (
@@ -64,65 +60,23 @@ export default async function LineupPage({
       )}
 
       {hasLineup && (
-        <>
-          <section className="mb-10">
-            <h2 className="text-sm font-medium text-zinc-500 uppercase tracking-wide mb-3">
-              Fielding Grid
-            </h2>
-            <div className="overflow-x-auto">
-              <table className="text-sm border-collapse w-full">
-                <thead>
-                  <tr>
-                    <th className="border border-zinc-200 bg-zinc-50 px-3 py-2 text-left font-medium text-zinc-600 w-16">
-                      Pos
-                    </th>
-                    {innings.map((inning) => (
-                      <th
-                        key={inning}
-                        className="border border-zinc-200 bg-zinc-50 px-3 py-2 text-center font-medium text-zinc-600"
-                      >
-                        Inn {inning}
-                      </th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {ALL_POSITIONS.map((pos) => (
-                    <tr key={pos} className="even:bg-zinc-50/50">
-                      <td className="border border-zinc-200 px-3 py-2 font-medium text-zinc-700">
-                        {pos}
-                      </td>
-                      {innings.map((inning) => (
-                        <td
-                          key={inning}
-                          className="border border-zinc-200 px-3 py-2 text-center text-zinc-800"
-                        >
-                          {gridMap.get(`${inning}:${pos}`) ?? '—'}
-                        </td>
-                      ))}
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </section>
-
-          <section>
-            <h2 className="text-sm font-medium text-zinc-500 uppercase tracking-wide mb-3">
-              Batting Order
-            </h2>
-            <ol className="space-y-1">
-              {sortedBatting.map(({ playerId, orderIndex }) => (
-                <li key={playerId} className="flex items-center gap-3">
-                  <span className="text-sm text-zinc-400 w-6 text-right">{orderIndex}.</span>
-                  <span className="text-sm font-medium text-zinc-800">
-                    {playerMap.get(playerId) ?? playerId}
-                  </span>
-                </li>
-              ))}
-            </ol>
-          </section>
-        </>
+        <LineupSwapGrid
+          gameId={gameId}
+          initialFieldingSlots={fs.map((s) => ({
+            gameId: s.gameId,
+            inning: s.inning,
+            playerId: s.playerId,
+            position: s.position,
+          }))}
+          initialBattingSlots={bs.map((s) => ({
+            gameId: s.gameId,
+            playerId: s.playerId,
+            orderIndex: s.orderIndex,
+            genderGroup: s.genderGroup,
+          }))}
+          initialInnings={innings}
+          playerMap={playerMap}
+        />
       )}
     </div>
   )
