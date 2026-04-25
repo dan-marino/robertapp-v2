@@ -1,5 +1,6 @@
 import { generateFieldingGrid } from './fieldingEngine'
 import { generateUnifiedBattingOrder } from './battingOrderEngine'
+import { generateSplitBattingOrders } from './splitBattingEngine'
 import type {
   Player,
   Game,
@@ -30,7 +31,7 @@ export function generateLineup({
   battingHistory,
   pitcherIds,
 }: GenerateLineupParams): Lineup {
-  // 1. Build fielding grid
+  // 1. Build fielding grid (identical for both modes)
   const fieldingAssignments = generateFieldingGrid({
     activeRoster,
     preferences,
@@ -47,19 +48,42 @@ export function generateLineup({
     position: a.position,
   }))
 
-  // 2. Build batting order (Unified mode — Split mode handled separately in #18)
-  const battingEntries = generateUnifiedBattingOrder({
-    activePlayers: activeRoster,
-    latePlayerIds,
-    battingHistory,
-  })
+  // 2. Build batting order
+  let battingSlots: BattingSlot[]
 
-  const battingSlots: BattingSlot[] = battingEntries.map((e) => ({
-    gameId: game.id,
-    playerId: e.playerId,
-    orderIndex: e.orderIndex,
-    genderGroup: 'All',
-  }))
+  if (game.mode === 'Split') {
+    const { women, men } = generateSplitBattingOrders({
+      activePlayers: activeRoster,
+      latePlayerIds,
+      battingHistory,
+    })
+    battingSlots = [
+      ...women.map((e) => ({
+        gameId: game.id,
+        playerId: e.playerId,
+        orderIndex: e.orderIndex,
+        genderGroup: 'F' as const,
+      })),
+      ...men.map((e) => ({
+        gameId: game.id,
+        playerId: e.playerId,
+        orderIndex: e.orderIndex,
+        genderGroup: 'M' as const,
+      })),
+    ]
+  } else {
+    const entries = generateUnifiedBattingOrder({
+      activePlayers: activeRoster,
+      latePlayerIds,
+      battingHistory,
+    })
+    battingSlots = entries.map((e) => ({
+      gameId: game.id,
+      playerId: e.playerId,
+      orderIndex: e.orderIndex,
+      genderGroup: 'All' as const,
+    }))
+  }
 
   return { gameId: game.id, fieldingSlots, battingSlots }
 }

@@ -66,6 +66,7 @@ export default async function LineupPage({
       {hasLineup && (
         <LineupSwapGrid
           gameId={gameId}
+          mode={game.mode as 'Unified' | 'Split'}
           initialFieldingSlots={fs.map((s) => ({
             gameId: s.gameId,
             inning: s.inning,

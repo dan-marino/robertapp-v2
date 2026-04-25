@@ -20,6 +20,7 @@ interface BattingSlot {
 
 interface Props {
   gameId: string
+  mode: 'Unified' | 'Split'
   initialFieldingSlots: FieldingSlot[]
   initialBattingSlots: BattingSlot[]
   initialInnings: number[]
@@ -33,6 +34,7 @@ interface CellKey {
 
 export default function LineupSwapGrid({
   gameId,
+  mode,
   initialFieldingSlots,
   initialBattingSlots,
   initialInnings,
@@ -228,16 +230,44 @@ export default function LineupSwapGrid({
         <h2 className="text-sm font-medium text-zinc-500 uppercase tracking-wide mb-3">
           Batting Order
         </h2>
-        <ol className="space-y-1">
-          {sortedBatting.map(({ playerId, orderIndex }) => (
-            <li key={playerId} className="flex items-center gap-3">
-              <span className="text-sm text-zinc-400 w-6 text-right">{orderIndex}.</span>
-              <span className="text-sm font-medium text-zinc-800">
-                {playerMap[playerId] ?? playerId}
-              </span>
-            </li>
-          ))}
-        </ol>
+        {mode === 'Split' ? (
+          <div className="grid grid-cols-2 gap-8">
+            {(['F', 'M'] as const).map((group) => {
+              const label = group === 'F' ? 'Women' : 'Men'
+              const groupSlots = sortedBatting
+                .filter((s) => s.genderGroup === group)
+                .sort((a, b) => a.orderIndex - b.orderIndex)
+              return (
+                <div key={group}>
+                  <h3 className="text-xs font-semibold text-zinc-500 uppercase tracking-wide mb-2">
+                    {label}
+                  </h3>
+                  <ol className="space-y-1">
+                    {groupSlots.map(({ playerId, orderIndex }) => (
+                      <li key={playerId} className="flex items-center gap-3">
+                        <span className="text-sm text-zinc-400 w-6 text-right">{orderIndex}.</span>
+                        <span className="text-sm font-medium text-zinc-800">
+                          {playerMap[playerId] ?? playerId}
+                        </span>
+                      </li>
+                    ))}
+                  </ol>
+                </div>
+              )
+            })}
+          </div>
+        ) : (
+          <ol className="space-y-1">
+            {sortedBatting.map(({ playerId, orderIndex }) => (
+              <li key={playerId} className="flex items-center gap-3">
+                <span className="text-sm text-zinc-400 w-6 text-right">{orderIndex}.</span>
+                <span className="text-sm font-medium text-zinc-800">
+                  {playerMap[playerId] ?? playerId}
+                </span>
+              </li>
+            ))}
+          </ol>
+        )}
       </section>
     </div>
   )
