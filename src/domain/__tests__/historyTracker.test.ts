@@ -13,7 +13,7 @@ describe('computePositionDeltas', () => {
     const slots: FieldingSlot[] = [
       { gameId: 'g1', inning: 1, playerId: 'm0', position: 'SS' },
       { gameId: 'g1', inning: 1, playerId: 'm1', position: 'P' },
-      { gameId: 'g1', inning: 2, playerId: 'm0', position: 'CF' },
+      { gameId: 'g1', inning: 2, playerId: 'm0', position: 'LCF' },
     ]
     const deltas = computePositionDeltas(slots, new Set())
     expect(deltas).toHaveLength(3)

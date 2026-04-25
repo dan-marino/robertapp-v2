@@ -1,7 +1,7 @@
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { db } from '@/db'
-import { games, players, rosters, rsvps, seasons } from '@/db/schema'
+import { games, players, rosters, rsvps, seasons, fieldingSlots } from '@/db/schema'
 import { eq, inArray } from 'drizzle-orm'
 import RSVPManager from './RSVPManager'
 import type { RSVPStatus } from '@/domain/types'
@@ -47,6 +47,13 @@ export default async function GamePage({
     status: rsvpMap.get(player.id) ?? null,
   }))
 
+  const existingLineup = await db
+    .select({ id: fieldingSlots.id })
+    .from(fieldingSlots)
+    .where(eq(fieldingSlots.gameId, id))
+    .limit(1)
+  const hasLineup = existingLineup.length > 0
+
   return (
     <div className="max-w-2xl mx-auto px-4 py-8">
       <div className="mb-6">
@@ -74,7 +81,24 @@ export default async function GamePage({
         <h2 className="text-sm font-medium text-zinc-500 uppercase tracking-wide mb-3">
           Lineup
         </h2>
-        <p className="text-zinc-400 text-sm">Lineup generation coming soon.</p>
+        {hasLineup ? (
+          <Link
+            href={`/games/${id}/lineup`}
+            className="inline-block px-4 py-2 bg-zinc-900 text-white text-sm rounded-md hover:bg-zinc-700"
+          >
+            View Lineup →
+          </Link>
+        ) : (
+          <div className="flex items-center gap-4">
+            <p className="text-zinc-400 text-sm">No lineup generated yet.</p>
+            <Link
+              href={`/games/${id}/lineup`}
+              className="text-sm text-zinc-500 hover:text-zinc-800 underline"
+            >
+              Generate →
+            </Link>
+          </div>
+        )}
       </section>
     </div>
   )
