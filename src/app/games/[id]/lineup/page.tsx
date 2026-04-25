@@ -4,6 +4,7 @@ import { db } from '@/db'
 import { games, players, fieldingSlots, battingSlots, seasons } from '@/db/schema'
 import { eq, inArray } from 'drizzle-orm'
 import GenerateLineupButton from './GenerateLineupButton'
+import ReshuffleButton from './ReshuffleButton'
 import LineupSwapGrid from './LineupSwapGrid'
 
 export default async function LineupPage({
@@ -50,7 +51,10 @@ export default async function LineupPage({
             {game.date} · {game.inningCount} innings · {game.mode} mode
           </p>
         </div>
-        <GenerateLineupButton gameId={gameId} />
+        <div className="flex items-center gap-2">
+          {hasLineup && <ReshuffleButton gameId={gameId} />}
+          <GenerateLineupButton gameId={gameId} />
+        </div>
       </div>
 
       {!hasLineup && (
