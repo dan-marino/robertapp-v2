@@ -29,8 +29,28 @@ export async function POST(
   }
 
   const body = await request.json()
-  const { name, gender } = body
+  const { name, gender, playerId } = body
 
+  // Path A: link an existing player to the season
+  if (playerId) {
+    const [existing] = await db.select().from(players).where(eq(players.id, playerId))
+    if (!existing) {
+      return Response.json({ error: 'Player not found' }, { status: 404 })
+    }
+
+    const [alreadyOnRoster] = await db
+      .select()
+      .from(rosters)
+      .where(and(eq(rosters.seasonId, seasonId), eq(rosters.playerId, playerId)))
+    if (alreadyOnRoster) {
+      return Response.json({ error: 'Player already on roster' }, { status: 409 })
+    }
+
+    await db.insert(rosters).values({ seasonId, playerId })
+    return Response.json(existing, { status: 201 })
+  }
+
+  // Path B: create a new player globally and add to season
   if (!name || typeof name !== 'string' || name.trim() === '') {
     return Response.json({ error: 'name is required' }, { status: 400 })
   }

@@ -30,6 +30,11 @@ export default async function SeasonPage({
 
   const roster = rosterRows.map((r) => r.player)
 
+  const pool = await db
+    .select()
+    .from(players)
+    .where(eq(players.isGuest, false))
+
   return (
     <div className="max-w-2xl mx-auto px-4 py-8">
       <div className="mb-6">
@@ -65,7 +70,7 @@ export default async function SeasonPage({
         <GameCreator seasonId={id} />
       </section>
 
-      <RosterManager seasonId={id} initialRoster={roster} />
+      <RosterManager seasonId={id} initialRoster={roster} initialPool={pool} />
     </div>
   )
 }
