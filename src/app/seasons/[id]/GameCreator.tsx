@@ -12,6 +12,8 @@ export default function GameCreator({ seasonId }: Props) {
   const [date, setDate] = useState('')
   const [inningCount, setInningCount] = useState<5 | 6>(6)
   const [mode, setMode] = useState<'Unified' | 'Split'>('Unified')
+  const [time, setTime] = useState('')
+  const [opponent, setOpponent] = useState('')
   const [creating, setCreating] = useState(false)
 
   async function handleCreate(e: React.FormEvent) {
@@ -20,7 +22,13 @@ export default function GameCreator({ seasonId }: Props) {
     const res = await fetch(`/api/seasons/${seasonId}/games`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ date, inningCount, mode }),
+      body: JSON.stringify({
+        date,
+        inningCount,
+        mode,
+        time: time || undefined,
+        opponent: opponent || undefined,
+      }),
     })
     const game = await res.json()
     setCreating(false)
@@ -36,6 +44,26 @@ export default function GameCreator({ seasonId }: Props) {
           value={date}
           onChange={(e) => setDate(e.target.value)}
           required
+          className="border border-zinc-200 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-zinc-400"
+        />
+      </div>
+      <div>
+        <label className="block text-xs text-zinc-500 mb-1">Time</label>
+        <input
+          type="text"
+          value={time}
+          onChange={(e) => setTime(e.target.value)}
+          placeholder="6:30 PM"
+          className="border border-zinc-200 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-zinc-400"
+        />
+      </div>
+      <div>
+        <label className="block text-xs text-zinc-500 mb-1">Opponent</label>
+        <input
+          type="text"
+          value={opponent}
+          onChange={(e) => setOpponent(e.target.value)}
+          placeholder="Team name"
           className="border border-zinc-200 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-zinc-400"
         />
       </div>

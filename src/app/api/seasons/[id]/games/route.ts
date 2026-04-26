@@ -14,7 +14,7 @@ export async function POST(
   }
 
   const body = await request.json()
-  const { date, inningCount, mode } = body
+  const { date, inningCount, mode, time, opponent } = body
 
   if (!date || typeof date !== 'string') {
     return Response.json({ error: 'date is required (ISO string)' }, { status: 400 })
@@ -33,6 +33,8 @@ export async function POST(
     date,
     inningCount,
     mode: mode ?? 'Unified',
+    time: typeof time === 'string' ? time : null,
+    opponent: typeof opponent === 'string' ? opponent : null,
   })
 
   const [game] = await db.select().from(games).where(eq(games.id, id))
