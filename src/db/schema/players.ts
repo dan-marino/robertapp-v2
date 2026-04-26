@@ -7,4 +7,5 @@ export const players = pgTable('players', {
   name: varchar('name', { length: 255 }).notNull(),
   gender: genderEnum('gender').notNull(),
   isGuest: boolean('is_guest').notNull().default(false),
+  traded: boolean('traded').notNull().default(false),
 })
