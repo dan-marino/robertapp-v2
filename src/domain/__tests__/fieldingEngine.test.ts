@@ -15,8 +15,8 @@ function makeRoster(men: number, women: number): Player[] {
   return players
 }
 
-function assignmentsByInning(assignments: ReturnType<typeof generateFieldingGrid>, inning: number) {
-  return assignments.filter((a) => a.inning === inning)
+function assignmentsByInning(result: ReturnType<typeof generateFieldingGrid>, inning: number) {
+  return result.assignments.filter((a) => a.inning === inning)
 }
 
 // ─── Basic shape ─────────────────────────────────────────────────────────────
@@ -52,7 +52,7 @@ describe('±1 inning fairness', () => {
     })
 
     const countByPlayer = new Map<string, number>()
-    for (const a of result) {
+    for (const a of result.assignments) {
       countByPlayer.set(a.playerId, (countByPlayer.get(a.playerId) ?? 0) + 1)
     }
 
@@ -77,7 +77,7 @@ describe('gender field rules', () => {
     })
 
     for (let inning = 1; inning <= 6; inning++) {
-      const womenThisInning = result
+      const womenThisInning = result.assignments
         .filter((a) => a.inning === inning)
         .filter((a) => roster.find((p) => p.id === a.playerId)?.gender === 'F')
       expect(womenThisInning.length).toBeGreaterThanOrEqual(3)
@@ -95,7 +95,7 @@ describe('gender field rules', () => {
     })
 
     for (let inning = 1; inning <= 6; inning++) {
-      const menThisInning = result
+      const menThisInning = result.assignments
         .filter((a) => a.inning === inning)
         .filter((a) => roster.find((p) => p.id === a.playerId)?.gender === 'M')
       expect(menThisInning.length).toBeLessThanOrEqual(7)
@@ -132,7 +132,7 @@ describe('late player rules', () => {
       inningCount: 6,
     })
 
-    const laterInnings = result.filter((a) => a.inning > 1 && a.playerId === latePlayer.id)
+    const laterInnings = result.assignments.filter((a) => a.inning > 1 && a.playerId === latePlayer.id)
     expect(laterInnings.length).toBeGreaterThan(0)
   })
 })
@@ -151,7 +151,7 @@ describe('pitcher scheduling', () => {
       pitcherIds: ['m0'],
       inningCount: 6,
     })
-    const pitchingInnings = result.filter((a) => a.playerId === 'm0' && a.position === 'P')
+    const pitchingInnings = result.assignments.filter((a) => a.playerId === 'm0' && a.position === 'P')
     expect(pitchingInnings).toHaveLength(6)
   })
 
@@ -164,8 +164,8 @@ describe('pitcher scheduling', () => {
       pitcherIds: ['m0', 'm1'],
       inningCount: 6,
     })
-    const p0innings = result.filter((a) => a.playerId === 'm0' && a.position === 'P').map((a) => a.inning)
-    const p1innings = result.filter((a) => a.playerId === 'm1' && a.position === 'P').map((a) => a.inning)
+    const p0innings = result.assignments.filter((a) => a.playerId === 'm0' && a.position === 'P').map((a) => a.inning)
+    const p1innings = result.assignments.filter((a) => a.playerId === 'm1' && a.position === 'P').map((a) => a.inning)
     expect(p0innings).toHaveLength(3)
     expect(p1innings).toHaveLength(3)
     expect([...p0innings, ...p1innings].sort()).toEqual([1, 2, 3, 4, 5, 6])
@@ -181,7 +181,7 @@ describe('pitcher scheduling', () => {
       inningCount: 6,
     })
     for (const id of ['m0', 'm1', 'm2']) {
-      const pitchingInnings = result.filter((a) => a.playerId === id && a.position === 'P')
+      const pitchingInnings = result.assignments.filter((a) => a.playerId === id && a.position === 'P')
       expect(pitchingInnings).toHaveLength(2)
     }
   })
@@ -196,7 +196,7 @@ describe('pitcher scheduling', () => {
       inningCount: 6,
     })
     const counts = ['m0', 'm1', 'm2', 'm3'].map(
-      (id) => result.filter((a) => a.playerId === id && a.position === 'P').length
+      (id) => result.assignments.filter((a) => a.playerId === id && a.position === 'P').length
     ).sort()
     expect(counts).toEqual([1, 1, 2, 2])
   })
@@ -210,7 +210,7 @@ describe('pitcher scheduling', () => {
       pitcherIds: ['m0', 'm1'],
       inningCount: 6,
     })
-    const p0assignments = result.filter((a) => a.playerId === 'm0')
+    const p0assignments = result.assignments.filter((a) => a.playerId === 'm0')
     const p0NonPitching = p0assignments.filter((a) => a.position !== 'P')
     expect(p0NonPitching.length).toBeGreaterThan(0)
   })
@@ -234,7 +234,7 @@ describe('preference tiers', () => {
     })
 
     // m0 should play SS more often than random chance (at least once)
-    const m0SS = result.filter((a) => a.playerId === 'm0' && a.position === 'SS')
+    const m0SS = result.assignments.filter((a) => a.playerId === 'm0' && a.position === 'SS')
     expect(m0SS.length).toBeGreaterThanOrEqual(1)
   })
 })
@@ -262,8 +262,8 @@ describe('history tiebreak', () => {
       inningCount: 6,
     })
 
-    const m0SS = result.filter((a) => a.playerId === 'm0' && a.position === 'SS').length
-    const m1SS = result.filter((a) => a.playerId === 'm1' && a.position === 'SS').length
+    const m0SS = result.assignments.filter((a) => a.playerId === 'm0' && a.position === 'SS').length
+    const m1SS = result.assignments.filter((a) => a.playerId === 'm1' && a.position === 'SS').length
     expect(m1SS).toBeGreaterThan(m0SS)
   })
 })
@@ -305,7 +305,7 @@ describe('guest yield', () => {
         latePlayerIds: [],
         inningCount: 6,
       })
-      guestSSCount += result.filter((a) => a.playerId === 'guest0' && a.position === 'SS').length
+      guestSSCount += result.assignments.filter((a) => a.playerId === 'guest0' && a.position === 'SS').length
     }
 
     // Regulars should collectively dominate SS; guest should have fewer innings there
@@ -335,7 +335,110 @@ describe('Anti constraint', () => {
       inningCount: 6,
     })
 
-    const violations = result.filter((a) => a.playerId === 'm0' && a.position === 'P')
+    const violations = result.assignments.filter((a) => a.playerId === 'm0' && a.position === 'P')
     expect(violations).toHaveLength(0)
+  })
+})
+
+// ─── Short on women: position exclusions ─────────────────────────────────────
+
+describe('short on women: position exclusions', () => {
+  it('drops Catcher when fewer than 3 women are present', () => {
+    // 9 players (7M + 2F): all 9 play each inning, need 9 positions.
+    // Excluding C leaves exactly 9 — no fallback restore needed.
+    const roster = makeRoster(7, 2)
+    const result = generateFieldingGrid({
+      activeRoster: roster,
+      preferences: [],
+      positionHistory: [],
+      latePlayerIds: [],
+      inningCount: 6,
+    })
+    const catcherAssignments = result.assignments.filter((a) => a.position === 'C')
+    expect(catcherAssignments).toHaveLength(0)
+  })
+
+  it('drops both Catcher and Left Field when fewer than 2 women are present', () => {
+    // 8 players (7M + 1F): all 8 play each inning, need 8 positions.
+    // Excluding C+LF leaves exactly 8 — no fallback restore needed.
+    const roster = makeRoster(7, 1)
+    const result = generateFieldingGrid({
+      activeRoster: roster,
+      preferences: [],
+      positionHistory: [],
+      latePlayerIds: [],
+      inningCount: 6,
+    })
+    const catcherAssignments = result.assignments.filter((a) => a.position === 'C')
+    const lfAssignments = result.assignments.filter((a) => a.position === 'LF')
+    expect(catcherAssignments).toHaveLength(0)
+    expect(lfAssignments).toHaveLength(0)
+  })
+})
+
+// ─── Disqualification warning ─────────────────────────────────────────────────
+
+describe('disqualification warning', () => {
+  it('returns a disqualification warning when no women are on the active roster', () => {
+    const roster = makeRoster(10, 0)
+    const result = generateFieldingGrid({
+      activeRoster: roster,
+      preferences: [],
+      positionHistory: [],
+      latePlayerIds: [],
+      inningCount: 6,
+    })
+    expect(result.warnings.length).toBeGreaterThan(0)
+    expect(result.warnings[0]).toMatch(/woman|women|disqualif/i)
+  })
+
+  it('returns no warnings when at least one woman is present', () => {
+    const roster = makeRoster(9, 1)
+    const result = generateFieldingGrid({
+      activeRoster: roster,
+      preferences: [],
+      positionHistory: [],
+      latePlayerIds: [],
+      inningCount: 6,
+    })
+    expect(result.warnings).toHaveLength(0)
+  })
+})
+
+// ─── Batting order sit priority ───────────────────────────────────────────────
+
+describe('batting order sit priority', () => {
+  // 11-player roster → 1 player sits per inning (6 players each sit once)
+  // With battingOrder provided, sits are assigned in batting order:
+  // the top-of-order player (index 0) gets the inning-1 sit.
+
+  it('top-of-order batter sits inning 1 when battingOrder is provided', () => {
+    const roster = makeRoster(8, 3) // 11 players
+    const battingOrder = roster.map((p) => p.id) // m0 bats first
+    const result = generateFieldingGrid({
+      activeRoster: roster,
+      preferences: [],
+      positionHistory: [],
+      latePlayerIds: [],
+      inningCount: 6,
+      battingOrder,
+    })
+    const inning1PlayerIds = result.assignments.filter((a) => a.inning === 1).map((a) => a.playerId)
+    expect(inning1PlayerIds).not.toContain('m0') // top-of-order sits inning 1
+  })
+
+  it('bottom-of-order batter plays inning 1 when battingOrder is provided', () => {
+    const roster = makeRoster(8, 3) // 11 players
+    const battingOrder = roster.map((p) => p.id) // w2 bats last
+    const result = generateFieldingGrid({
+      activeRoster: roster,
+      preferences: [],
+      positionHistory: [],
+      latePlayerIds: [],
+      inningCount: 6,
+      battingOrder,
+    })
+    const inning1PlayerIds = result.assignments.filter((a) => a.inning === 1).map((a) => a.playerId)
+    expect(inning1PlayerIds).toContain('w2') // bottom-of-order plays inning 1
   })
 })

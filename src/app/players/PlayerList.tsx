@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import AddPlayerForm from './AddPlayerForm'
+import CSVImporter from './CSVImporter'
 
 interface Player {
   id: string
@@ -55,6 +56,13 @@ export default function PlayerList({ initialPlayers }: Props) {
           Add Player
         </h2>
         <AddPlayerForm onAdd={handleAdd} />
+      </section>
+
+      <section className="mb-10">
+        <h2 className="text-sm font-medium text-zinc-500 uppercase tracking-wide mb-3">
+          Import from CSV
+        </h2>
+        <CSVImporter />
       </section>
 
       <section>

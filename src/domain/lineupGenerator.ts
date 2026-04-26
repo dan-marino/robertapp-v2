@@ -32,7 +32,7 @@ export function generateLineup({
   pitcherIds,
 }: GenerateLineupParams): Lineup {
   // 1. Build fielding grid (identical for both modes)
-  const fieldingAssignments = generateFieldingGrid({
+  const { assignments: fieldingAssignments } = generateFieldingGrid({
     activeRoster,
     preferences,
     positionHistory,

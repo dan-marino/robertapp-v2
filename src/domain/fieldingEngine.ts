@@ -15,6 +15,11 @@ export interface FieldingAssignment {
   position: Position
 }
 
+export interface FieldingResult {
+  assignments: FieldingAssignment[]
+  warnings: string[]
+}
+
 interface EngineParams {
   activeRoster: Player[]
   preferences: PositionPreference[]
@@ -22,6 +27,7 @@ interface EngineParams {
   latePlayerIds: string[]
   pitcherIds?: string[] // up to 4; engine schedules their P assignments
   inningCount: InningCount
+  battingOrder?: string[] // playerIds in batting order; top-of-order batters sit inning 1
 }
 
 // ─── Utilities ───────────────────────────────────────────────────────────────
@@ -107,7 +113,8 @@ function schedulePitchers(pitcherIds: string[], inningCount: InningCount): Map<s
 function computeSitSchedule(
   rosterIds: string[],
   latePlayerIds: string[],
-  inningCount: InningCount
+  inningCount: InningCount,
+  battingOrder?: string[]
 ): Map<number, Set<string>> {
   const n = rosterIds.length
   const slotsPerInning = 10
@@ -123,9 +130,21 @@ function computeSitSchedule(
   const baseSits = Math.floor(totalSits / n)
   const extraSits = totalSits % n
 
-  // Shuffle roster — late players go last so they're assigned to inning 1 via override below
+  // Order roster for sit distribution — late players go last (forced to inning 1 via override).
+  // When battingOrder is provided, sort non-late players by batting position ascending so that
+  // top-of-order batters receive their sits in earlier innings (inning 1 first).
+  // Without battingOrder, fall back to a random shuffle.
   const lateSet = new Set(latePlayerIds)
-  const nonLate = shuffle(rosterIds.filter((id) => !lateSet.has(id)))
+  const nonLateIds = rosterIds.filter((id) => !lateSet.has(id))
+  const nonLate = battingOrder && battingOrder.length > 0
+    ? [...nonLateIds].sort((a, b) => {
+        const ai = battingOrder.indexOf(a)
+        const bi = battingOrder.indexOf(b)
+        const aPos = ai === -1 ? nonLateIds.length : ai
+        const bPos = bi === -1 ? nonLateIds.length : bi
+        return aPos - bPos
+      })
+    : shuffle(nonLateIds)
   const late = rosterIds.filter((id) => lateSet.has(id))
   const ordered = [...nonLate, ...late]
 
@@ -262,9 +281,16 @@ export function generateFieldingGrid({
   latePlayerIds,
   pitcherIds = [],
   inningCount,
-}: EngineParams): FieldingAssignment[] {
+  battingOrder,
+}: EngineParams): FieldingResult {
+  const warnings: string[] = []
   const n = activeRoster.length
-  if (n === 0) return []
+  if (n === 0) return { assignments: [], warnings }
+
+  const womenCount = activeRoster.filter((p) => p.gender === 'F').length
+  if (womenCount === 0) {
+    warnings.push('Disqualification: no women available. League rules require at least one woman on the field.')
+  }
 
   const lateSet = new Set(latePlayerIds)
   const rosterIds = activeRoster.map((p) => p.id)
@@ -274,7 +300,7 @@ export function generateFieldingGrid({
   const pitcherSchedule = schedulePitchers(capped, inningCount)
 
   // Pre-compute sitting schedule
-  const sitSchedule = computeSitSchedule(rosterIds, latePlayerIds, inningCount)
+  const sitSchedule = computeSitSchedule(rosterIds, latePlayerIds, inningCount, battingOrder)
 
   const allAssignments: FieldingAssignment[] = []
 
@@ -338,5 +364,5 @@ export function generateFieldingGrid({
     allAssignments.push(...inningAssignments)
   }
 
-  return allAssignments
+  return { assignments: allAssignments, warnings }
 }
