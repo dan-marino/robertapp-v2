@@ -5,6 +5,7 @@ import { games, players, rosters, rsvps, seasons, fieldingSlots } from '@/db/sch
 import { eq, inArray } from 'drizzle-orm'
 import RSVPManager from './RSVPManager'
 import ModeToggle from './ModeToggle'
+import GameEditor from './GameEditor'
 import type { RSVPStatus } from '@/domain/types'
 
 export default async function GamePage({
@@ -66,11 +67,14 @@ export default async function GamePage({
         </Link>
       </div>
 
-      <div className="flex items-center justify-between mb-8">
-        <div>
-          <h1 className="text-2xl font-semibold mb-1">{game.date}</h1>
-          <p className="text-sm text-zinc-500">{game.inningCount} innings</p>
-        </div>
+      <div className="flex items-start justify-between mb-8 gap-4">
+        <GameEditor
+          gameId={id}
+          initialDate={game.date}
+          initialTime={game.time ?? null}
+          initialOpponent={game.opponent ?? null}
+          initialInningCount={game.inningCount}
+        />
         <ModeToggle gameId={id} initialMode={game.mode as 'Unified' | 'Split'} />
       </div>
 
