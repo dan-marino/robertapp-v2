@@ -8,7 +8,7 @@ export async function PUT(
 ) {
   const { id } = await params
   const body = await request.json()
-  const { name, gender } = body
+  const { name, gender, traded } = body
 
   const updates: Partial<typeof players.$inferInsert> = {}
 
@@ -24,6 +24,13 @@ export async function PUT(
       return Response.json({ error: 'gender must be M or F' }, { status: 400 })
     }
     updates.gender = gender
+  }
+
+  if (traded !== undefined) {
+    if (typeof traded !== 'boolean') {
+      return Response.json({ error: 'traded must be a boolean' }, { status: 400 })
+    }
+    updates.traded = traded
   }
 
   if (Object.keys(updates).length === 0) {
