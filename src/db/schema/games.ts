@@ -11,4 +11,6 @@ export const games = pgTable('games', {
   date: text('date').notNull(), // ISO date string
   inningCount: integer('inning_count').notNull(), // 5 or 6
   mode: gameModeEnum('mode').notNull().default('Unified'),
+  time: text('time'),
+  opponent: text('opponent'),
 })
