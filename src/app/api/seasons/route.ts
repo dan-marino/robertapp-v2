@@ -3,8 +3,13 @@ import { seasons } from '@/db/schema'
 import { eq } from 'drizzle-orm'
 
 export async function GET() {
-  const rows = await db.select().from(seasons)
-  return Response.json(rows)
+  try {
+    const rows = await db.select().from(seasons)
+    return Response.json(rows)
+  } catch (err) {
+    console.error('GET /api/seasons error:', err)
+    return Response.json({ error: 'Failed to fetch seasons' }, { status: 500 })
+  }
 }
 
 export async function POST(request: Request) {

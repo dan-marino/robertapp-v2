@@ -1,5 +1,14 @@
 import type { Player, BattingHistory } from './types'
 
+function shuffle<T>(arr: T[]): T[] {
+  const out = [...arr]
+  for (let i = out.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1))
+    ;[out[i], out[j]] = [out[j], out[i]]
+  }
+  return out
+}
+
 export interface UnifiedBattingParams {
   activePlayers: Player[]
   latePlayerIds: string[]
@@ -102,9 +111,9 @@ export function generateUnifiedBattingOrder({
 
   const score = (p: Player) => battingScore(p.id, lateSet.has(p.id), battingHistory, N)
 
-  // Sort each group ascending by score (lower score = earlier slot)
-  const sortedWomen = [...women].sort((a, b) => score(a) - score(b))
-  const sortedMen = [...men].sort((a, b) => score(a) - score(b))
+  // Pre-shuffle so ties are broken randomly, then sort by score
+  const sortedWomen = shuffle(women).sort((a, b) => score(a) - score(b))
+  const sortedMen = shuffle(men).sort((a, b) => score(a) - score(b))
 
   const result: BattingOrderEntry[] = []
 

@@ -19,8 +19,12 @@ export default function Home() {
 
   useEffect(() => {
     fetch('/api/seasons')
-      .then((r) => r.json())
+      .then((r) => {
+        if (!r.ok) throw new Error(`HTTP ${r.status}`)
+        return r.json()
+      })
       .then(setSeasons)
+      .catch((err) => console.error('Failed to load seasons:', err))
   }, [])
 
   async function handleCreate(e: React.FormEvent) {

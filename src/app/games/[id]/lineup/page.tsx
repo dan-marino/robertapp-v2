@@ -29,8 +29,8 @@ export default async function LineupPage({
     playerIds.length > 0
       ? await db.select().from(players).where(inArray(players.id, playerIds))
       : []
-  const playerMap: Record<string, string> = Object.fromEntries(
-    playerRows.map((p) => [p.id, p.name])
+  const playerMap: Record<string, { name: string; gender: 'M' | 'F' }> = Object.fromEntries(
+    playerRows.map((p) => [p.id, { name: p.name, gender: p.gender as 'M' | 'F' }])
   )
 
   const innings = [...new Set(fs.map((s) => s.inning))].sort((a, b) => a - b)
@@ -52,6 +52,15 @@ export default async function LineupPage({
           </p>
         </div>
         <div className="flex items-center gap-2">
+          {hasLineup && (
+            <a
+              href={`/api/games/${gameId}/lineup/export`}
+              download
+              className="px-4 py-2 bg-zinc-100 text-zinc-800 text-sm rounded-md border border-zinc-300 hover:bg-zinc-200"
+            >
+              Export CSV
+            </a>
+          )}
           {hasLineup && <ReshuffleButton gameId={gameId} />}
           <GenerateLineupButton gameId={gameId} />
         </div>
@@ -65,6 +74,7 @@ export default async function LineupPage({
 
       {hasLineup && (
         <LineupSwapGrid
+          key={fs.map((s) => `${s.inning}:${s.position}:${s.playerId}`).sort().join('|')}
           gameId={gameId}
           mode={game.mode as 'Unified' | 'Split'}
           initialFieldingSlots={fs.map((s) => ({

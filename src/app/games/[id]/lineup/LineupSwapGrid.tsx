@@ -18,18 +18,58 @@ interface BattingSlot {
   genderGroup: string
 }
 
+interface PlayerInfo {
+  name: string
+  gender: 'M' | 'F'
+}
+
 interface Props {
   gameId: string
   mode: 'Unified' | 'Split'
   initialFieldingSlots: FieldingSlot[]
   initialBattingSlots: BattingSlot[]
   initialInnings: number[]
-  playerMap: Record<string, string>
+  playerMap: Record<string, PlayerInfo>
 }
 
 interface CellKey {
   inning: number
   position: string
+}
+
+function PositionBadge({
+  position,
+  isActive,
+  isEmpty,
+  onClick,
+}: {
+  position: string | null
+  isActive: boolean
+  isEmpty: boolean
+  onClick: () => void
+}) {
+  if (isEmpty) {
+    return (
+      <button
+        onClick={onClick}
+        className="inline-flex items-center justify-center rounded-md px-2 py-0.5 text-xs text-zinc-300 hover:bg-zinc-100 hover:text-zinc-500 transition-colors"
+      >
+        –
+      </button>
+    )
+  }
+  return (
+    <button
+      onClick={onClick}
+      className={`inline-flex items-center justify-center rounded-md px-2 py-0.5 text-xs font-medium transition-colors ${
+        isActive
+          ? 'bg-blue-200 text-blue-900 ring-2 ring-blue-400'
+          : 'bg-green-100 text-green-800 hover:bg-green-200'
+      }`}
+    >
+      {position}
+    </button>
+  )
 }
 
 export default function LineupSwapGrid({
@@ -41,80 +81,201 @@ export default function LineupSwapGrid({
   playerMap,
 }: Props) {
   const [fieldingSlots, setFieldingSlots] = useState(initialFieldingSlots)
-  const [battingSlots] = useState(initialBattingSlots)
-  const [selected, setSelected] = useState<CellKey | null>(null)
+  const [battingSlots, setBattingSlots] = useState(initialBattingSlots)
+  const [activeCell, setActiveCell] = useState<CellKey | null>(null)
   const [violations, setViolations] = useState<Violation[]>([])
-  const [pendingSwap, setPendingSwap] = useState<boolean>(false)
-  const [swapError, setSwapError] = useState<string | null>(null)
-  // When a swap produces error violations the user must explicitly acknowledge
-  // before making further changes.
-  const [awaitingAck, setAwaitingAck] = useState<boolean>(false)
-  const [lastSwap, setLastSwap] = useState<{ slot1: CellKey; slot2: CellKey } | null>(null)
+  const [saving, setSaving] = useState(false)
+  const [saveError, setSaveError] = useState<string | null>(null)
+  const [pendingAddSlot, setPendingAddSlot] = useState<{ inning: number; playerId: string } | null>(null)
+  const [draggedPlayer, setDraggedPlayer] = useState<{ playerId: string; group: string } | null>(null)
+  const [dragOverPlayerId, setDragOverPlayerId] = useState<string | null>(null)
 
   const innings = initialInnings
-
-  const gridMap = new Map<string, string>()
-  for (const slot of fieldingSlots) {
-    gridMap.set(`${slot.inning}:${slot.position}`, playerMap[slot.playerId] ?? slot.playerId)
-  }
-
   const errorViolations = violations.filter((v) => v.severity === 'error')
   const warningViolations = violations.filter((v) => v.severity === 'warning')
 
-  async function applySwap(slot1: CellKey, slot2: CellKey) {
-    setPendingSwap(true)
-    setSwapError(null)
+  // playerFieldingMap[playerId][inning] = position
+  const playerFieldingMap = new Map<string, Map<number, string>>()
+  for (const slot of fieldingSlots) {
+    if (!playerFieldingMap.has(slot.playerId)) {
+      playerFieldingMap.set(slot.playerId, new Map())
+    }
+    playerFieldingMap.get(slot.playerId)!.set(slot.inning, slot.position)
+  }
 
-    const res = await fetch(`/api/games/${gameId}/lineup/swap`, {
-      method: 'POST',
+  // positionToPlayer[inning:position] = playerId
+  const positionToPlayer = new Map<string, string>()
+  for (const slot of fieldingSlots) {
+    positionToPlayer.set(`${slot.inning}:${slot.position}`, slot.playerId)
+  }
+
+  async function handleAssign(inning: number, position: string, playerId: string | null) {
+    setSaving(true)
+    setSaveError(null)
+    const res = await fetch(`/api/games/${gameId}/lineup/slot`, {
+      method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ slot1, slot2 }),
+      body: JSON.stringify({ inning, position, playerId }),
     })
-
-    setPendingSwap(false)
-
+    setSaving(false)
     if (!res.ok) {
       const body = await res.json().catch(() => ({}))
-      setSwapError(body.error ?? 'Swap failed')
+      setSaveError(body.error ?? 'Save failed')
       return
     }
-
     const { lineup, violations: newViolations } = await res.json()
     setFieldingSlots(lineup.fieldingSlots)
     setViolations(newViolations)
-    setLastSwap({ slot1, slot2 })
+    setActiveCell(null)
+    setPendingAddSlot(null)
+  }
 
-    if (newViolations.some((v: { severity: string }) => v.severity === 'error')) {
-      setAwaitingAck(true)
+  function handleCellClick(inning: number, position: string) {
+    if (activeCell?.inning === inning && activeCell?.position === position) {
+      setActiveCell(null)
+    } else {
+      setActiveCell({ inning, position })
     }
   }
 
-  async function handleRevertSwap() {
-    if (!lastSwap) return
-    await applySwap(lastSwap.slot2, lastSwap.slot1) // swap back
-    setLastSwap(null)
-    setAwaitingAck(false)
+  async function handleBattingReorder(group: string, orderedPlayerIds: string[]) {
+    // Optimistic update
+    setBattingSlots((prev) => {
+      const updated = [...prev]
+      orderedPlayerIds.forEach((pid, idx) => {
+        const slot = updated.find((s) => s.playerId === pid && s.genderGroup === group)
+        if (slot) slot.orderIndex = idx + 1
+      })
+      return updated
+    })
+    await fetch(`/api/games/${gameId}/lineup/batting-order`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ genderGroup: group, playerIds: orderedPlayerIds }),
+    })
   }
 
-  async function handleCellClick(inning: number, position: string) {
-    if (awaitingAck) return // must acknowledge errors before continuing
-
-    if (!selected) {
-      setSelected({ inning, position })
-      return
-    }
-
-    if (selected.inning === inning && selected.position === position) {
-      setSelected(null)
-      return
-    }
-
-    const slot1 = selected
-    setSelected(null)
-    await applySwap(slot1, { inning, position })
+  function handleDragStart(playerId: string, group: string) {
+    setDraggedPlayer({ playerId, group })
   }
 
-  const sortedBatting = [...battingSlots].sort((a, b) => a.orderIndex - b.orderIndex)
+  function handleDragOver(e: React.DragEvent, playerId: string) {
+    e.preventDefault()
+    setDragOverPlayerId(playerId)
+  }
+
+  function handleDrop(targetPlayerId: string, group: string, orderedRows: { playerId: string }[]) {
+    if (!draggedPlayer || draggedPlayer.group !== group) return
+    const ids = orderedRows.map((r) => r.playerId)
+    const fromIdx = ids.indexOf(draggedPlayer.playerId)
+    const toIdx = ids.indexOf(targetPlayerId)
+    if (fromIdx === -1 || toIdx === -1 || fromIdx === toIdx) return
+    const reordered = [...ids]
+    reordered.splice(fromIdx, 1)
+    reordered.splice(toIdx, 0, draggedPlayer.playerId)
+    handleBattingReorder(group, reordered)
+    setDraggedPlayer(null)
+    setDragOverPlayerId(null)
+  }
+
+  function handleDragEnd() {
+    setDraggedPlayer(null)
+    setDragOverPlayerId(null)
+  }
+
+  // Sorted player list for the picker
+  const sortedPlayers = Object.entries(playerMap).sort((a, b) =>
+    a[1].name.localeCompare(b[1].name)
+  )
+
+  interface PlayerRow {
+    playerId: string
+    batOrder: number
+    gender: 'M' | 'F'
+  }
+
+  const allBatting: PlayerRow[] = battingSlots.map((s) => ({
+    playerId: s.playerId,
+    batOrder: s.orderIndex,
+    gender: playerMap[s.playerId]?.gender ?? 'M',
+  }))
+
+  const unifiedRows = [...allBatting].sort((a, b) => a.batOrder - b.batOrder)
+  const mRows = allBatting.filter((r) => r.gender === 'M').sort((a, b) => a.batOrder - b.batOrder)
+  const fRows = allBatting.filter((r) => r.gender === 'F').sort((a, b) => a.batOrder - b.batOrder)
+
+  function renderRow(row: PlayerRow, isFemale: boolean, group: string, orderedRows: PlayerRow[]) {
+    const playerInfo = playerMap[row.playerId]
+    const isDragging = draggedPlayer?.playerId === row.playerId
+    const isDragOver = dragOverPlayerId === row.playerId && draggedPlayer?.group === group
+    return (
+      <tr
+        key={row.playerId}
+        draggable
+        onDragStart={() => handleDragStart(row.playerId, group)}
+        onDragOver={(e) => handleDragOver(e, row.playerId)}
+        onDrop={() => handleDrop(row.playerId, group, orderedRows)}
+        onDragEnd={handleDragEnd}
+        className={[
+          isFemale && mode === 'Unified' ? 'bg-pink-50' : '',
+          isDragging ? 'opacity-40' : '',
+          isDragOver ? 'border-t-2 border-blue-400' : '',
+        ].filter(Boolean).join(' ')}
+      >
+        <td className="py-2.5 pl-1 pr-2 text-zinc-300 cursor-grab select-none text-sm">
+          ⠿
+        </td>
+        <td className="py-2.5 pr-4 text-sm font-medium text-zinc-900 whitespace-nowrap">
+          {playerInfo?.name ?? row.playerId}
+        </td>
+        <td className="py-2.5 px-3 text-sm text-zinc-400 text-right tabular-nums">
+          {row.batOrder}
+        </td>
+        {innings.map((inning) => {
+          const pos = playerFieldingMap.get(row.playerId)?.get(inning) ?? null
+          return (
+            <td key={inning} className="py-2.5 px-2 text-center">
+              <PositionBadge
+                position={pos}
+                isActive={activeCell?.inning === inning && (
+                  pos
+                    ? activeCell?.position === pos && positionToPlayer.get(`${inning}:${pos}`) === row.playerId
+                    : false
+                )}
+                isEmpty={pos === null}
+                onClick={() => {
+                  if (pos) {
+                    setActiveCell({ inning, position: pos })
+                    setPendingAddSlot(null)
+                  } else {
+                    setPendingAddSlot({ inning, playerId: row.playerId })
+                    setActiveCell(null)
+                  }
+                }}
+              />
+            </td>
+          )
+        })}
+      </tr>
+    )
+  }
+
+  const tableHeader = (
+    <tr className="border-b border-zinc-100">
+      <th className="py-2 pl-1 pr-2 w-5" />
+      <th className="py-2 pr-4 text-left text-xs font-medium text-zinc-400 uppercase tracking-wide">Name</th>
+      <th className="py-2 px-3 text-right text-xs font-medium text-zinc-400 uppercase tracking-wide">Bat</th>
+      {innings.map((inning) => (
+        <th key={inning} className="py-2 px-2 text-center text-xs font-medium text-zinc-400 uppercase tracking-wide w-14">
+          {inning}
+        </th>
+      ))}
+    </tr>
+  )
+
+  const activeCellCurrentPlayerId = activeCell
+    ? positionToPlayer.get(`${activeCell.inning}:${activeCell.position}`) ?? null
+    : null
 
   return (
     <div>
@@ -133,142 +294,126 @@ export default function LineupSwapGrid({
               <span>{v.message}</span>
             </div>
           ))}
-          {awaitingAck && (
-            <div className="flex items-center gap-3 px-3 py-2 bg-red-100 border border-red-300 rounded-md text-sm text-red-900">
-              <span className="font-semibold">Action required:</span>
-              <span>This lineup has rule violations. Revert the last swap or acknowledge to keep it.</span>
-              <button
-                onClick={handleRevertSwap}
-                className="ml-auto px-3 py-1 bg-white border border-red-300 rounded text-red-700 text-xs hover:bg-red-50"
-              >
-                Revert Swap
-              </button>
-              <button
-                onClick={() => setAwaitingAck(false)}
-                className="px-3 py-1 bg-red-700 text-white rounded text-xs hover:bg-red-800"
-              >
-                Keep Anyway
-              </button>
-            </div>
-          )}
         </div>
       )}
 
-      {swapError && (
+      {saveError && (
         <div className="mb-4 px-3 py-2 bg-red-50 border border-red-200 rounded-md text-sm text-red-800">
-          {swapError}
+          {saveError}
         </div>
       )}
 
-      {selected && (
-        <p className="mb-3 text-xs text-zinc-500">
-          Selected: <strong>{selected.position}</strong> (Inning {selected.inning}) — click another cell to swap
-        </p>
-      )}
-
-      {pendingSwap && <p className="mb-3 text-xs text-zinc-400">Applying swap…</p>}
-
-      {/* Fielding Grid */}
-      <section className="mb-10">
-        <h2 className="text-sm font-medium text-zinc-500 uppercase tracking-wide mb-3">
-          Fielding Grid
-          <span className="ml-2 normal-case font-normal text-zinc-400">(click two cells to swap)</span>
-        </h2>
-        <div className="overflow-x-auto">
-          <table className="text-sm border-collapse w-full">
-            <thead>
-              <tr>
-                <th className="border border-zinc-200 bg-zinc-50 px-3 py-2 text-left font-medium text-zinc-600 w-16">
-                  Pos
-                </th>
-                {innings.map((inning) => (
-                  <th
-                    key={inning}
-                    className="border border-zinc-200 bg-zinc-50 px-3 py-2 text-center font-medium text-zinc-600"
-                  >
-                    Inn {inning}
-                  </th>
-                ))}
-              </tr>
-            </thead>
+      {/* Lineup table */}
+      <div className="overflow-x-auto mb-6">
+        {mode === 'Unified' ? (
+          <table className="w-full text-sm border-collapse">
+            <thead>{tableHeader}</thead>
+            <tbody>{unifiedRows.map((row) => renderRow(row, row.gender === 'F', 'All', unifiedRows))}</tbody>
+          </table>
+        ) : (
+          <table className="w-full text-sm border-collapse">
+            <thead>{tableHeader}</thead>
             <tbody>
-              {ALL_POSITIONS.map((pos) => (
-                <tr key={pos} className="even:bg-zinc-50/50">
-                  <td className="border border-zinc-200 px-3 py-2 font-medium text-zinc-700">
-                    {pos}
-                  </td>
-                  {innings.map((inning) => {
-                    const cellName = gridMap.get(`${inning}:${pos}`)
-                    const isSelected = selected?.inning === inning && selected?.position === pos
-                    const isEmpty = !cellName
-
-                    return (
-                      <td
-                        key={inning}
-                        onClick={() => !isEmpty && handleCellClick(inning, pos)}
-                        className={`border border-zinc-200 px-3 py-2 text-center transition-colors ${
-                          isEmpty
-                            ? 'text-zinc-300 cursor-default'
-                            : isSelected
-                            ? 'bg-blue-100 text-blue-800 cursor-pointer ring-2 ring-blue-400 ring-inset'
-                            : 'text-zinc-800 cursor-pointer hover:bg-zinc-100'
-                        }`}
-                      >
-                        {cellName ?? '—'}
-                      </td>
-                    )
-                  })}
-                </tr>
-              ))}
+              <tr>
+                <td colSpan={3 + innings.length} className="pt-3 pb-1 pl-1 text-sm font-semibold text-blue-600">
+                  GUYS ({mRows.length})
+                </td>
+              </tr>
+              {mRows.map((row) => renderRow(row, false, 'M', mRows))}
+              <tr>
+                <td colSpan={3 + innings.length} className="pt-4 pb-1 pl-1 text-sm font-semibold text-pink-500">
+                  GIRLS ({fRows.length})
+                </td>
+              </tr>
+              {fRows.map((row) => renderRow(row, false, 'F', fRows))}
             </tbody>
           </table>
-        </div>
-      </section>
+        )}
+      </div>
 
-      {/* Batting Order */}
-      <section>
-        <h2 className="text-sm font-medium text-zinc-500 uppercase tracking-wide mb-3">
-          Batting Order
-        </h2>
-        {mode === 'Split' ? (
-          <div className="grid grid-cols-2 gap-8">
-            {(['F', 'M'] as const).map((group) => {
-              const label = group === 'F' ? 'Women' : 'Men'
-              const groupSlots = sortedBatting
-                .filter((s) => s.genderGroup === group)
-                .sort((a, b) => a.orderIndex - b.orderIndex)
+      {/* Player picker panel */}
+      {activeCell && activeCell.position !== '__new__' && (
+        <div className="border border-zinc-200 rounded-lg p-4 bg-white">
+          <div className="flex items-center justify-between mb-3">
+            <p className="text-sm font-medium text-zinc-700">
+              Assign <span className="font-semibold">{activeCell.position}</span> — Inning {activeCell.inning}
+              {activeCellCurrentPlayerId && (
+                <span className="ml-2 text-zinc-400 font-normal">
+                  (currently {playerMap[activeCellCurrentPlayerId]?.name ?? activeCellCurrentPlayerId})
+                </span>
+              )}
+            </p>
+            <button onClick={() => setActiveCell(null)} className="text-zinc-400 hover:text-zinc-600 text-xs">
+              ✕ Close
+            </button>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {activeCellCurrentPlayerId && (
+              <button
+                onClick={() => handleAssign(activeCell.inning, activeCell.position, null)}
+                disabled={saving}
+                className="px-3 py-1.5 text-xs rounded-md border border-red-200 text-red-600 hover:bg-red-50 disabled:opacity-50"
+              >
+                Remove
+              </button>
+            )}
+            {sortedPlayers.map(([pid, info]) => {
+              const alreadyThisInning = playerFieldingMap.get(pid)?.get(activeCell.inning)
+              const isCurrent = pid === activeCellCurrentPlayerId
               return (
-                <div key={group}>
-                  <h3 className="text-xs font-semibold text-zinc-500 uppercase tracking-wide mb-2">
-                    {label}
-                  </h3>
-                  <ol className="space-y-1">
-                    {groupSlots.map(({ playerId, orderIndex }) => (
-                      <li key={playerId} className="flex items-center gap-3">
-                        <span className="text-sm text-zinc-400 w-6 text-right">{orderIndex}.</span>
-                        <span className="text-sm font-medium text-zinc-800">
-                          {playerMap[playerId] ?? playerId}
-                        </span>
-                      </li>
-                    ))}
-                  </ol>
-                </div>
+                <button
+                  key={pid}
+                  onClick={() => handleAssign(activeCell.inning, activeCell.position, pid)}
+                  disabled={saving || isCurrent}
+                  className={`px-3 py-1.5 text-xs rounded-md border transition-colors disabled:opacity-40 ${
+                    isCurrent
+                      ? 'border-blue-300 bg-blue-50 text-blue-800'
+                      : alreadyThisInning
+                      ? 'border-zinc-200 text-zinc-500 hover:bg-zinc-50'
+                      : 'border-zinc-200 text-zinc-800 hover:bg-zinc-50'
+                  }`}
+                >
+                  {info.name}
+                  {alreadyThisInning && !isCurrent && (
+                    <span className="ml-1 text-zinc-400">({alreadyThisInning})</span>
+                  )}
+                </button>
               )
             })}
           </div>
-        ) : (
-          <ol className="space-y-1">
-            {sortedBatting.map(({ playerId, orderIndex }) => (
-              <li key={playerId} className="flex items-center gap-3">
-                <span className="text-sm text-zinc-400 w-6 text-right">{orderIndex}.</span>
-                <span className="text-sm font-medium text-zinc-800">
-                  {playerMap[playerId] ?? playerId}
-                </span>
-              </li>
+          {saving && <p className="mt-2 text-xs text-zinc-400">Saving…</p>}
+        </div>
+      )}
+
+      {/* Add slot panel: player known, pick position */}
+      {pendingAddSlot && (
+        <div className="border border-zinc-200 rounded-lg p-4 bg-white">
+          <div className="flex items-center justify-between mb-3">
+            <p className="text-sm font-medium text-zinc-700">
+              Assign <span className="font-semibold">{playerMap[pendingAddSlot.playerId]?.name}</span> — Inning {pendingAddSlot.inning}
+            </p>
+            <button onClick={() => setPendingAddSlot(null)} className="text-zinc-400 hover:text-zinc-600 text-xs">✕ Close</button>
+          </div>
+          <p className="text-xs text-zinc-500 mb-2">Pick a position:</p>
+          <div className="flex flex-wrap gap-2">
+            {ALL_POSITIONS.filter((p) => !fieldingSlots.some((s) => s.inning === pendingAddSlot.inning && s.position === p)).map((pos) => (
+              <button
+                key={pos}
+                onClick={() => handleAssign(pendingAddSlot.inning, pos, pendingAddSlot.playerId)}
+                disabled={saving}
+                className="px-3 py-1.5 text-xs rounded-md border border-zinc-200 text-zinc-800 hover:bg-zinc-50 disabled:opacity-50"
+              >
+                {pos}
+              </button>
             ))}
-          </ol>
-        )}
-      </section>
+            {ALL_POSITIONS.every((p) => fieldingSlots.some((s) => s.inning === pendingAddSlot.inning && s.position === p)) && (
+              <p className="text-xs text-zinc-400">All positions filled this inning.</p>
+            )}
+          </div>
+          {saving && <p className="mt-2 text-xs text-zinc-400">Saving…</p>}
+        </div>
+      )}
     </div>
   )
 }
+

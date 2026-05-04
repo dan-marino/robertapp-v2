@@ -1,5 +1,14 @@
 import type { Player, BattingHistory, GenderGroup } from './types'
 
+function shuffle<T>(arr: T[]): T[] {
+  const out = [...arr]
+  for (let i = out.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1))
+    ;[out[i], out[j]] = [out[j], out[i]]
+  }
+  return out
+}
+
 export interface SplitBattingParams {
   activePlayers: Player[]
   latePlayerIds: string[]
@@ -42,7 +51,7 @@ function orderGroup(
   genderGroup: GenderGroup
 ): BattingOrderEntry[] {
   const N = players.length
-  const sorted = [...players].sort(
+  const sorted = shuffle(players).sort(
     (a, b) =>
       battingScore(a.id, lateSet.has(a.id), history, genderGroup, N) -
       battingScore(b.id, lateSet.has(b.id), history, genderGroup, N)

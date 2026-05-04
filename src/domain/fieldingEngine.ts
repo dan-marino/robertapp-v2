@@ -148,12 +148,17 @@ function computeSitSchedule(
   const late = rosterIds.filter((id) => lateSet.has(id))
   const ordered = [...nonLate, ...late]
 
-  // Build flat sit list: each player appears baseSits times (plus one extra for first extraSits players)
+  // Build interleaved sit list: round-by-round so the cursor-based distributor
+  // spreads sits evenly across innings. Grouped order (P1,P1,P2,P2,...) caused
+  // the cursor to exhaust all innings before reaching tail players.
+  const maxRounds = baseSits + 1
   const sitList: string[] = []
-  ordered.forEach((id, idx) => {
-    const sits = baseSits + (idx < extraSits ? 1 : 0)
-    for (let i = 0; i < sits; i++) sitList.push(id)
-  })
+  for (let round = 0; round < maxRounds; round++) {
+    ordered.forEach((id, idx) => {
+      const sits = baseSits + (idx < extraSits ? 1 : 0)
+      if (round < sits) sitList.push(id)
+    })
+  }
 
   // Round-robin distribute sits across innings, ensuring each inning gets sitsCapPerInning sitters
   // Late players: their first sit must be inning 1
