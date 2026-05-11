@@ -1,6 +1,6 @@
 import { db } from '@/db'
 import { games, players, rosters, rsvps } from '@/db/schema'
-import { eq, and, inArray } from 'drizzle-orm'
+import { eq, and, inArray, sql } from 'drizzle-orm'
 import type { RSVPStatus } from '@/domain/types'
 
 const VALID_STATUSES: RSVPStatus[] = ['Present', 'Absent', 'Late']
@@ -72,7 +72,7 @@ export async function PUT(
       })))
       .onConflictDoUpdate({
         target: [rsvps.gameId, rsvps.playerId],
-        set: { status: rsvps.status },
+        set: { status: sql`excluded.status` },
       })
   }
 
