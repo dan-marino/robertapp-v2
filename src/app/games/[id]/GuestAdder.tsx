@@ -33,25 +33,27 @@ export default function GuestAdder({ gameId, onGuestAdded }: Props) {
     setAdding(false)
   }
 
+  const inputClass = "border border-zinc-200 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-zinc-400"
+
   return (
     <form onSubmit={handleAdd} className="flex gap-3 items-end mt-3">
       <div className="flex-1">
-        <label className="block text-xs text-zinc-500 mb-1">Guest name</label>
+        <label className="block text-xs text-zinc-500 dark:text-zinc-400 mb-1">Guest name</label>
         <input
           type="text"
           value={name}
           onChange={(e) => setName(e.target.value)}
           required
           placeholder="Guest player"
-          className="w-full border border-zinc-200 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-zinc-400"
+          className={`w-full ${inputClass}`}
         />
       </div>
       <div>
-        <label className="block text-xs text-zinc-500 mb-1">Gender</label>
+        <label className="block text-xs text-zinc-500 dark:text-zinc-400 mb-1">Gender</label>
         <select
           value={gender}
           onChange={(e) => setGender(e.target.value as 'M' | 'F')}
-          className="border border-zinc-200 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-zinc-400"
+          className={inputClass}
         >
           <option value="M">M</option>
           <option value="F">F</option>

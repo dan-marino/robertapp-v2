@@ -24,9 +24,9 @@ interface Props {
 const STATUSES: RSVPStatus[] = ['Present', 'Absent', 'Late']
 
 const STATUS_COLORS: Record<RSVPStatus, string> = {
-  Present: 'bg-green-100 text-green-800 border-green-200',
-  Absent: 'bg-red-100 text-red-700 border-red-200',
-  Late: 'bg-yellow-100 text-yellow-800 border-yellow-200',
+  Present: 'bg-green-100 text-green-800 border-green-200 dark:bg-green-900/40 dark:text-green-300 dark:border-green-800',
+  Absent: 'bg-red-100 text-red-700 border-red-200 dark:bg-red-900/40 dark:text-red-300 dark:border-red-800',
+  Late: 'bg-yellow-100 text-yellow-800 border-yellow-200 dark:bg-yellow-900/40 dark:text-yellow-300 dark:border-yellow-800',
 }
 
 export default function RSVPManager({ gameId, initialRsvps }: Props) {
@@ -69,14 +69,14 @@ export default function RSVPManager({ gameId, initialRsvps }: Props) {
   return (
     <div>
       {rsvps.length > 0 && (
-        <ul className="divide-y divide-zinc-100 border border-zinc-100 rounded-lg overflow-hidden mb-4">
+        <ul className="divide-y divide-zinc-100 dark:divide-zinc-800 border border-zinc-100 dark:border-zinc-800 rounded-lg overflow-hidden mb-4">
           {rsvps.map(({ player, status }) => (
             <li key={player.id} className="flex items-center justify-between px-4 py-3">
               <span className="text-sm font-medium flex items-center gap-2">
                 {player.name}
-                <span className="text-xs text-zinc-400">{player.gender}</span>
+                <span className="text-xs text-zinc-400 dark:text-zinc-500">{player.gender}</span>
                 {player.isGuest && (
-                  <span className="text-xs bg-zinc-100 text-zinc-500 px-1.5 py-0.5 rounded">
+                  <span className="text-xs bg-zinc-100 dark:bg-zinc-800 text-zinc-500 dark:text-zinc-400 px-1.5 py-0.5 rounded">
                     Guest
                   </span>
                 )}
@@ -89,7 +89,7 @@ export default function RSVPManager({ gameId, initialRsvps }: Props) {
                     className={`px-2 py-1 text-xs rounded border font-medium transition-colors ${
                       status === s
                         ? STATUS_COLORS[s]
-                        : 'bg-zinc-50 text-zinc-400 border-zinc-200 hover:border-zinc-400'
+                        : 'bg-zinc-50 dark:bg-zinc-800 text-zinc-400 dark:text-zinc-500 border-zinc-200 dark:border-zinc-700 hover:border-zinc-400 dark:hover:border-zinc-500'
                     }`}
                   >
                     {s}
@@ -110,7 +110,7 @@ export default function RSVPManager({ gameId, initialRsvps }: Props) {
       )}
 
       {rsvps.length === 0 && (
-        <p className="text-zinc-400 text-sm mb-4">No players on roster yet.</p>
+        <p className="text-zinc-400 dark:text-zinc-500 text-sm mb-4">No players on roster yet.</p>
       )}
 
       <button
