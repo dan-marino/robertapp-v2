@@ -393,7 +393,7 @@ export default function LineupSwapGrid({
                 key={pos}
                 onClick={() => handleAssign(pendingAddSlot.inning, pos, pendingAddSlot.playerId)}
                 disabled={saving}
-                className="px-3 py-1.5 text-xs rounded-md border border-zinc-200 dark:border-zinc-700 text-zinc-800 dark:text-zinc-200 hover:bg-zinc-50 dark:hover:bg-zinc-800 disabled:opacity-50"
+                className="px-3 py-1.5 text-xs rounded-md border border-zinc-200 dark:border-zinc-700 text-zinc-700 dark:text-zinc-200 hover:bg-zinc-50 dark:hover:bg-zinc-800 disabled:opacity-50"
               >
                 {pos}
               </button>
