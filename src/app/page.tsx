@@ -45,29 +45,29 @@ export default function Home() {
       <h1 className="text-2xl font-semibold mb-8">Softball Lineup Generator</h1>
 
       <section className="mb-10">
-        <h2 className="text-sm font-medium text-zinc-500 uppercase tracking-wide mb-3">
+        <h2 className="text-sm font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wide mb-3">
           New Season
         </h2>
         <form onSubmit={handleCreate} className="flex gap-3 items-end">
           <div className="flex-1">
-            <label className="block text-xs text-zinc-500 mb-1">Season name</label>
+            <label className="block text-xs text-zinc-500 dark:text-zinc-400 mb-1">Season name</label>
             <input
               type="text"
               value={name}
               onChange={(e) => setName(e.target.value)}
               required
               placeholder="Spring 2025"
-              className="w-full border border-zinc-200 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-zinc-400"
+              className="w-full border border-zinc-200 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-zinc-400"
             />
           </div>
           <div>
-            <label className="block text-xs text-zinc-500 mb-1">Games</label>
+            <label className="block text-xs text-zinc-500 dark:text-zinc-400 mb-1">Games</label>
             <input
               type="number"
               min={1}
               value={gameCount}
               onChange={(e) => setGameCount(Number(e.target.value))}
-              className="w-20 border border-zinc-200 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-zinc-400"
+              className="w-20 border border-zinc-200 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-zinc-400"
             />
           </div>
           <button
@@ -81,21 +81,21 @@ export default function Home() {
       </section>
 
       <section>
-        <h2 className="text-sm font-medium text-zinc-500 uppercase tracking-wide mb-3">
+        <h2 className="text-sm font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wide mb-3">
           Seasons
         </h2>
         {seasons.length === 0 ? (
-          <p className="text-zinc-400 text-sm">No seasons yet.</p>
+          <p className="text-zinc-400 dark:text-zinc-500 text-sm">No seasons yet.</p>
         ) : (
-          <ul className="divide-y divide-zinc-100 border border-zinc-100 rounded-lg overflow-hidden">
+          <ul className="divide-y divide-zinc-100 dark:divide-zinc-800 border border-zinc-100 dark:border-zinc-800 rounded-lg overflow-hidden">
             {seasons.map((s) => (
               <li key={s.id}>
                 <Link
                   href={`/seasons/${s.id}`}
-                  className="flex items-center justify-between px-4 py-3 hover:bg-zinc-50 transition-colors"
+                  className="flex items-center justify-between px-4 py-3 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors"
                 >
                   <span className="text-sm font-medium">{s.name}</span>
-                  <span className="text-xs text-zinc-400">{s.gameCount} games</span>
+                  <span className="text-xs text-zinc-400 dark:text-zinc-500">{s.gameCount} games</span>
                 </Link>
               </li>
             ))}
