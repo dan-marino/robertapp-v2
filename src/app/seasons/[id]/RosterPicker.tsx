@@ -68,16 +68,18 @@ export default function RosterPicker({ seasonId, initialRoster, initialPool }: P
     setAddingNew(false)
   }
 
+  const inputClass = "border border-zinc-200 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-zinc-400"
+
   return (
     <section>
-      <h2 className="text-sm font-medium text-zinc-500 uppercase tracking-wide mb-3">
+      <h2 className="text-sm font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wide mb-3">
         Roster
       </h2>
 
       {roster.length === 0 ? (
-        <p className="text-zinc-400 text-sm mb-4">No players yet.</p>
+        <p className="text-zinc-400 dark:text-zinc-500 text-sm mb-4">No players yet.</p>
       ) : (
-        <ul className="divide-y divide-zinc-100 border border-zinc-100 rounded-lg overflow-hidden mb-4">
+        <ul className="divide-y divide-zinc-100 dark:divide-zinc-800 border border-zinc-100 dark:border-zinc-800 rounded-lg overflow-hidden mb-4">
           {roster.map((player) => (
             <li
               key={player.id}
@@ -93,7 +95,7 @@ export default function RosterPicker({ seasonId, initialRoster, initialPool }: P
                 </a>
               </div>
               <div className="flex items-center gap-3">
-                <span className="text-xs text-zinc-400">{player.gender}</span>
+                <span className="text-xs text-zinc-400 dark:text-zinc-500">{player.gender}</span>
                 <button
                   onClick={() => handleRemove(player.id)}
                   className="text-xs text-red-400 hover:text-red-600"
@@ -106,8 +108,8 @@ export default function RosterPicker({ seasonId, initialRoster, initialPool }: P
         </ul>
       )}
 
-      <div className="border border-zinc-200 rounded-lg p-4 mb-4">
-        <h3 className="text-xs font-medium text-zinc-500 uppercase tracking-wide mb-3">
+      <div className="border border-zinc-200 dark:border-zinc-700 dark:bg-zinc-900 rounded-lg p-4 mb-4">
+        <h3 className="text-xs font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wide mb-3">
           Add from player pool
         </h3>
 
@@ -116,28 +118,28 @@ export default function RosterPicker({ seasonId, initialRoster, initialPool }: P
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           placeholder="Search players…"
-          className="w-full border border-zinc-200 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-zinc-400 mb-3"
+          className={`w-full ${inputClass} mb-3`}
         />
 
         {availablePlayers.length === 0 ? (
-          <p className="text-zinc-400 text-sm">
+          <p className="text-zinc-400 dark:text-zinc-500 text-sm">
             {search ? 'No players match your search.' : 'All players are already on the roster.'}
           </p>
         ) : (
-          <ul className="divide-y divide-zinc-100 border border-zinc-100 rounded-lg overflow-hidden">
+          <ul className="divide-y divide-zinc-100 dark:divide-zinc-800 border border-zinc-100 dark:border-zinc-800 rounded-lg overflow-hidden">
             {availablePlayers.map((player) => (
               <li
                 key={player.id}
-                className="flex items-center justify-between px-4 py-3 hover:bg-zinc-50"
+                className="flex items-center justify-between px-4 py-3 hover:bg-zinc-50 dark:hover:bg-zinc-800"
               >
                 <div className="flex items-center gap-2">
                   <span className="text-sm font-medium">{player.name}</span>
-                  <span className="text-xs text-zinc-400">{player.gender}</span>
+                  <span className="text-xs text-zinc-400 dark:text-zinc-500">{player.gender}</span>
                 </div>
                 <button
                   onClick={() => handleAddExisting(player)}
                   disabled={addingId === player.id}
-                  className="text-xs text-zinc-600 hover:text-zinc-900 font-medium disabled:opacity-50"
+                  className="text-xs text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 font-medium disabled:opacity-50"
                 >
                   {addingId === player.id ? 'Adding…' : 'Add'}
                 </button>
@@ -148,28 +150,28 @@ export default function RosterPicker({ seasonId, initialRoster, initialPool }: P
       </div>
 
       {showNewForm ? (
-        <form onSubmit={handleAddNew} className="border border-zinc-200 rounded-lg p-4">
-          <h3 className="text-xs font-medium text-zinc-500 uppercase tracking-wide mb-3">
+        <form onSubmit={handleAddNew} className="border border-zinc-200 dark:border-zinc-700 dark:bg-zinc-900 rounded-lg p-4">
+          <h3 className="text-xs font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wide mb-3">
             New player
           </h3>
           <div className="flex gap-3 items-end">
             <div className="flex-1">
-              <label className="block text-xs text-zinc-500 mb-1">Name</label>
+              <label className="block text-xs text-zinc-500 dark:text-zinc-400 mb-1">Name</label>
               <input
                 type="text"
                 value={newName}
                 onChange={(e) => setNewName(e.target.value)}
                 required
                 placeholder="Player name"
-                className="w-full border border-zinc-200 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-zinc-400"
+                className={`w-full ${inputClass}`}
               />
             </div>
             <div>
-              <label className="block text-xs text-zinc-500 mb-1">Gender</label>
+              <label className="block text-xs text-zinc-500 dark:text-zinc-400 mb-1">Gender</label>
               <select
                 value={newGender}
                 onChange={(e) => setNewGender(e.target.value as 'M' | 'F')}
-                className="border border-zinc-200 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-zinc-400"
+                className={inputClass}
               >
                 <option value="M">M</option>
                 <option value="F">F</option>
@@ -185,7 +187,7 @@ export default function RosterPicker({ seasonId, initialRoster, initialPool }: P
             <button
               type="button"
               onClick={() => setShowNewForm(false)}
-              className="px-4 py-2 text-sm text-zinc-500 hover:text-zinc-800"
+              className="px-4 py-2 text-sm text-zinc-500 dark:text-zinc-400 hover:text-zinc-800 dark:hover:text-zinc-200"
             >
               Cancel
             </button>
@@ -194,7 +196,7 @@ export default function RosterPicker({ seasonId, initialRoster, initialPool }: P
       ) : (
         <button
           onClick={() => setShowNewForm(true)}
-          className="text-sm text-zinc-500 hover:text-zinc-800 underline"
+          className="text-sm text-zinc-500 dark:text-zinc-400 hover:text-zinc-800 dark:hover:text-zinc-200 underline"
         >
           + Add new player
         </button>
