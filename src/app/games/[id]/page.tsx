@@ -61,7 +61,7 @@ export default async function GamePage({
       <div className="mb-6">
         <Link
           href={`/seasons/${game.seasonId}`}
-          className="text-sm text-zinc-500 hover:text-zinc-800"
+          className="text-sm text-zinc-500 dark:text-zinc-400 hover:text-zinc-800 dark:hover:text-zinc-200"
         >
           ← {season?.name ?? 'Season'}
         </Link>
@@ -79,14 +79,14 @@ export default async function GamePage({
       </div>
 
       <section className="mb-10">
-        <h2 className="text-sm font-medium text-zinc-500 uppercase tracking-wide mb-3">
+        <h2 className="text-sm font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wide mb-3">
           RSVPs
         </h2>
         <RSVPManager gameId={id} initialRsvps={initialRsvps} />
       </section>
 
       <section>
-        <h2 className="text-sm font-medium text-zinc-500 uppercase tracking-wide mb-3">
+        <h2 className="text-sm font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wide mb-3">
           Lineup
         </h2>
         {hasLineup ? (
@@ -98,10 +98,10 @@ export default async function GamePage({
           </Link>
         ) : (
           <div className="flex items-center gap-4">
-            <p className="text-zinc-400 text-sm">No lineup generated yet.</p>
+            <p className="text-zinc-400 dark:text-zinc-500 text-sm">No lineup generated yet.</p>
             <Link
               href={`/games/${id}/lineup`}
-              className="text-sm text-zinc-500 hover:text-zinc-800 underline"
+              className="text-sm text-zinc-500 dark:text-zinc-400 hover:text-zinc-800 dark:hover:text-zinc-200 underline"
             >
               Generate →
             </Link>
