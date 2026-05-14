@@ -35,55 +35,57 @@ export default function GameCreator({ seasonId }: Props) {
     router.push(`/games/${game.id}`)
   }
 
+  const inputClass = "border border-zinc-200 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-zinc-400"
+
   return (
     <form onSubmit={handleCreate} className="flex gap-3 items-end flex-wrap">
       <div>
-        <label className="block text-xs text-zinc-500 mb-1">Date</label>
+        <label className="block text-xs text-zinc-500 dark:text-zinc-400 mb-1">Date</label>
         <input
           type="date"
           value={date}
           onChange={(e) => setDate(e.target.value)}
           required
-          className="border border-zinc-200 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-zinc-400"
+          className={inputClass}
         />
       </div>
       <div>
-        <label className="block text-xs text-zinc-500 mb-1">Time</label>
+        <label className="block text-xs text-zinc-500 dark:text-zinc-400 mb-1">Time</label>
         <input
           type="text"
           value={time}
           onChange={(e) => setTime(e.target.value)}
           placeholder="6:30 PM"
-          className="border border-zinc-200 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-zinc-400"
+          className={inputClass}
         />
       </div>
       <div>
-        <label className="block text-xs text-zinc-500 mb-1">Opponent</label>
+        <label className="block text-xs text-zinc-500 dark:text-zinc-400 mb-1">Opponent</label>
         <input
           type="text"
           value={opponent}
           onChange={(e) => setOpponent(e.target.value)}
           placeholder="Team name"
-          className="border border-zinc-200 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-zinc-400"
+          className={inputClass}
         />
       </div>
       <div>
-        <label className="block text-xs text-zinc-500 mb-1">Innings</label>
+        <label className="block text-xs text-zinc-500 dark:text-zinc-400 mb-1">Innings</label>
         <select
           value={inningCount}
           onChange={(e) => setInningCount(Number(e.target.value) as 5 | 6)}
-          className="border border-zinc-200 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-zinc-400"
+          className={inputClass}
         >
           <option value={6}>6</option>
           <option value={5}>5</option>
         </select>
       </div>
       <div>
-        <label className="block text-xs text-zinc-500 mb-1">Mode</label>
+        <label className="block text-xs text-zinc-500 dark:text-zinc-400 mb-1">Mode</label>
         <select
           value={mode}
           onChange={(e) => setMode(e.target.value as 'Unified' | 'Split')}
-          className="border border-zinc-200 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-zinc-400"
+          className={inputClass}
         >
           <option value="Unified">Unified</option>
           <option value="Split">Split</option>

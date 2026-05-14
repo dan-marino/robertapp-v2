@@ -38,28 +38,28 @@ export default async function SeasonPage({
   return (
     <div className="max-w-2xl mx-auto px-4 py-8">
       <div className="mb-6">
-        <Link href="/" className="text-sm text-zinc-500 hover:text-zinc-800">
+        <Link href="/" className="text-sm text-zinc-500 dark:text-zinc-400 hover:text-zinc-800 dark:hover:text-zinc-200">
           ← All seasons
         </Link>
       </div>
 
       <h1 className="text-2xl font-semibold mb-1">{season.name}</h1>
-      <p className="text-sm text-zinc-500 mb-8">{season.gameCount} games</p>
+      <p className="text-sm text-zinc-500 dark:text-zinc-400 mb-8">{season.gameCount} games</p>
 
       <section className="mb-10">
-        <h2 className="text-sm font-medium text-zinc-500 uppercase tracking-wide mb-3">
+        <h2 className="text-sm font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wide mb-3">
           Games
         </h2>
         {seasonGames.length > 0 && (
-          <ul className="divide-y divide-zinc-100 border border-zinc-100 rounded-lg overflow-hidden mb-4">
+          <ul className="divide-y divide-zinc-100 dark:divide-zinc-800 border border-zinc-100 dark:border-zinc-800 rounded-lg overflow-hidden mb-4">
             {seasonGames.map((game) => (
               <li key={game.id}>
                 <Link
                   href={`/games/${game.id}`}
-                  className="flex items-center justify-between px-4 py-3 hover:bg-zinc-50 transition-colors"
+                  className="flex items-center justify-between px-4 py-3 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors"
                 >
                   <span className="text-sm font-medium">{game.date}</span>
-                  <span className="text-xs text-zinc-400">
+                  <span className="text-xs text-zinc-400 dark:text-zinc-500">
                     {game.inningCount} inn · {game.mode}
                   </span>
                 </Link>
