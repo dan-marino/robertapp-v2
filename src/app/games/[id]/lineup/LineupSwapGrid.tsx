@@ -52,7 +52,7 @@ function PositionBadge({
     return (
       <button
         onClick={onClick}
-        className="inline-flex items-center justify-center rounded-md px-2 py-0.5 text-xs text-zinc-300 dark:text-zinc-600 hover:bg-zinc-100 dark:hover:bg-zinc-800 hover:text-zinc-500 dark:hover:text-zinc-400 transition-colors"
+        className="inline-flex items-center justify-center rounded-md px-2 py-0.5 text-xs text-zinc-300 dark:text-zinc-500 hover:bg-zinc-100 dark:hover:bg-zinc-800 hover:text-zinc-500 dark:hover:text-zinc-400 transition-colors"
       >
         –
       </button>
@@ -218,7 +218,7 @@ export default function LineupSwapGrid({
           isDragOver ? 'border-t-2 border-blue-400' : '',
         ].filter(Boolean).join(' ')}
       >
-        <td className="py-2.5 pl-1 pr-2 text-zinc-300 dark:text-zinc-600 cursor-grab select-none text-sm">
+        <td className="py-2.5 pl-1 pr-2 text-zinc-300 dark:text-zinc-500 cursor-grab select-none text-sm">
           ⠿
         </td>
         <td className="py-2.5 pr-4 text-sm font-medium text-zinc-900 dark:text-zinc-100 whitespace-nowrap">
@@ -309,13 +309,13 @@ export default function LineupSwapGrid({
             <thead>{tableHeader}</thead>
             <tbody>
               <tr>
-                <td colSpan={3 + innings.length} className="pt-3 pb-1 pl-1 text-sm font-semibold text-blue-600">
+                <td colSpan={3 + innings.length} className="pt-3 pb-1 pl-1 text-sm font-semibold text-blue-600 dark:text-blue-400">
                   GUYS ({mRows.length})
                 </td>
               </tr>
               {mRows.map((row) => renderRow(row, false, 'M', mRows))}
               <tr>
-                <td colSpan={3 + innings.length} className="pt-4 pb-1 pl-1 text-sm font-semibold text-pink-500">
+                <td colSpan={3 + innings.length} className="pt-4 pb-1 pl-1 text-sm font-semibold text-pink-500 dark:text-pink-400">
                   GIRLS ({fRows.length})
                 </td>
               </tr>
