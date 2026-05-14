@@ -51,7 +51,7 @@ function PrefBadges({ prefs }: { prefs: PrefRow[] }) {
       {anti.map((p) => (
         <span
           key={p.position}
-          className="text-xs border border-red-200 dark:border-red-800 text-red-400 rounded-full px-2 py-0.5 line-through"
+          className="text-xs border border-red-200 dark:border-red-800 text-red-400 dark:text-red-300 rounded-full px-2 py-0.5 line-through"
         >
           {p.position}
         </span>
@@ -172,10 +172,10 @@ export default function PlayerList({ initialPlayers, prefsByPlayer }: Props) {
                       <span className="text-sm font-medium text-zinc-400 dark:text-zinc-500">
                         {player.name}
                       </span>
-                      <span className="text-xs bg-zinc-100 dark:bg-zinc-700 text-zinc-400 dark:text-zinc-400 rounded px-1.5 py-0.5">
+                      <span className="text-xs bg-zinc-100 dark:bg-zinc-800 text-zinc-400 dark:text-zinc-500 rounded px-1.5 py-0.5">
                         {player.gender}
                       </span>
-                      <span className="text-xs bg-zinc-200 dark:bg-zinc-700 text-zinc-500 rounded px-1.5 py-0.5">
+                      <span className="text-xs bg-zinc-200 dark:bg-zinc-700 text-zinc-500 dark:text-zinc-400 rounded px-1.5 py-0.5">
                         Traded
                       </span>
                     </div>
