@@ -52,7 +52,7 @@ function PositionBadge({
     return (
       <button
         onClick={onClick}
-        className="inline-flex items-center justify-center rounded-md px-2 py-0.5 text-xs text-zinc-300 hover:bg-zinc-100 hover:text-zinc-500 transition-colors"
+        className="inline-flex items-center justify-center rounded-md px-2 py-0.5 text-xs text-zinc-300 dark:text-zinc-600 hover:bg-zinc-100 dark:hover:bg-zinc-800 hover:text-zinc-500 dark:hover:text-zinc-400 transition-colors"
       >
         –
       </button>
@@ -63,8 +63,8 @@ function PositionBadge({
       onClick={onClick}
       className={`inline-flex items-center justify-center rounded-md px-2 py-0.5 text-xs font-medium transition-colors ${
         isActive
-          ? 'bg-blue-200 text-blue-900 ring-2 ring-blue-400'
-          : 'bg-green-100 text-green-800 hover:bg-green-200'
+          ? 'bg-blue-200 dark:bg-blue-800 text-blue-900 dark:text-blue-100 ring-2 ring-blue-400'
+          : 'bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200 hover:bg-green-200 dark:hover:bg-green-800'
       }`}
     >
       {position}
@@ -94,7 +94,6 @@ export default function LineupSwapGrid({
   const errorViolations = violations.filter((v) => v.severity === 'error')
   const warningViolations = violations.filter((v) => v.severity === 'warning')
 
-  // playerFieldingMap[playerId][inning] = position
   const playerFieldingMap = new Map<string, Map<number, string>>()
   for (const slot of fieldingSlots) {
     if (!playerFieldingMap.has(slot.playerId)) {
@@ -103,7 +102,6 @@ export default function LineupSwapGrid({
     playerFieldingMap.get(slot.playerId)!.set(slot.inning, slot.position)
   }
 
-  // positionToPlayer[inning:position] = playerId
   const positionToPlayer = new Map<string, string>()
   for (const slot of fieldingSlots) {
     positionToPlayer.set(`${slot.inning}:${slot.position}`, slot.playerId)
@@ -139,7 +137,6 @@ export default function LineupSwapGrid({
   }
 
   async function handleBattingReorder(group: string, orderedPlayerIds: string[]) {
-    // Optimistic update
     setBattingSlots((prev) => {
       const updated = [...prev]
       orderedPlayerIds.forEach((pid, idx) => {
@@ -183,7 +180,6 @@ export default function LineupSwapGrid({
     setDragOverPlayerId(null)
   }
 
-  // Sorted player list for the picker
   const sortedPlayers = Object.entries(playerMap).sort((a, b) =>
     a[1].name.localeCompare(b[1].name)
   )
@@ -217,18 +213,18 @@ export default function LineupSwapGrid({
         onDrop={() => handleDrop(row.playerId, group, orderedRows)}
         onDragEnd={handleDragEnd}
         className={[
-          isFemale && mode === 'Unified' ? 'bg-pink-50' : '',
+          isFemale && mode === 'Unified' ? 'bg-pink-50 dark:bg-pink-950/30' : '',
           isDragging ? 'opacity-40' : '',
           isDragOver ? 'border-t-2 border-blue-400' : '',
         ].filter(Boolean).join(' ')}
       >
-        <td className="py-2.5 pl-1 pr-2 text-zinc-300 cursor-grab select-none text-sm">
+        <td className="py-2.5 pl-1 pr-2 text-zinc-300 dark:text-zinc-600 cursor-grab select-none text-sm">
           ⠿
         </td>
-        <td className="py-2.5 pr-4 text-sm font-medium text-zinc-900 whitespace-nowrap">
+        <td className="py-2.5 pr-4 text-sm font-medium text-zinc-900 dark:text-zinc-100 whitespace-nowrap">
           {playerInfo?.name ?? row.playerId}
         </td>
-        <td className="py-2.5 px-3 text-sm text-zinc-400 text-right tabular-nums">
+        <td className="py-2.5 px-3 text-sm text-zinc-400 dark:text-zinc-500 text-right tabular-nums">
           {row.batOrder}
         </td>
         {innings.map((inning) => {
@@ -261,12 +257,12 @@ export default function LineupSwapGrid({
   }
 
   const tableHeader = (
-    <tr className="border-b border-zinc-100">
+    <tr className="border-b border-zinc-100 dark:border-zinc-800">
       <th className="py-2 pl-1 pr-2 w-5" />
-      <th className="py-2 pr-4 text-left text-xs font-medium text-zinc-400 uppercase tracking-wide">Name</th>
-      <th className="py-2 px-3 text-right text-xs font-medium text-zinc-400 uppercase tracking-wide">Bat</th>
+      <th className="py-2 pr-4 text-left text-xs font-medium text-zinc-400 dark:text-zinc-500 uppercase tracking-wide">Name</th>
+      <th className="py-2 px-3 text-right text-xs font-medium text-zinc-400 dark:text-zinc-500 uppercase tracking-wide">Bat</th>
       {innings.map((inning) => (
-        <th key={inning} className="py-2 px-2 text-center text-xs font-medium text-zinc-400 uppercase tracking-wide w-14">
+        <th key={inning} className="py-2 px-2 text-center text-xs font-medium text-zinc-400 dark:text-zinc-500 uppercase tracking-wide w-14">
           {inning}
         </th>
       ))}
@@ -279,17 +275,16 @@ export default function LineupSwapGrid({
 
   return (
     <div>
-      {/* Violations */}
       {violations.length > 0 && (
         <div className="mb-6 space-y-2">
           {errorViolations.map((v, i) => (
-            <div key={i} className="flex items-start gap-2 px-3 py-2 bg-red-50 border border-red-200 rounded-md text-sm text-red-800">
+            <div key={i} className="flex items-start gap-2 px-3 py-2 bg-red-50 dark:bg-red-950 border border-red-200 dark:border-red-900 rounded-md text-sm text-red-800 dark:text-red-300">
               <span className="font-semibold shrink-0">Error</span>
               <span>{v.message}</span>
             </div>
           ))}
           {warningViolations.map((v, i) => (
-            <div key={i} className="flex items-start gap-2 px-3 py-2 bg-yellow-50 border border-yellow-200 rounded-md text-sm text-yellow-800">
+            <div key={i} className="flex items-start gap-2 px-3 py-2 bg-yellow-50 dark:bg-yellow-950 border border-yellow-200 dark:border-yellow-900 rounded-md text-sm text-yellow-800 dark:text-yellow-300">
               <span className="font-semibold shrink-0">Warning</span>
               <span>{v.message}</span>
             </div>
@@ -298,12 +293,11 @@ export default function LineupSwapGrid({
       )}
 
       {saveError && (
-        <div className="mb-4 px-3 py-2 bg-red-50 border border-red-200 rounded-md text-sm text-red-800">
+        <div className="mb-4 px-3 py-2 bg-red-50 dark:bg-red-950 border border-red-200 dark:border-red-900 rounded-md text-sm text-red-800 dark:text-red-300">
           {saveError}
         </div>
       )}
 
-      {/* Lineup table */}
       <div className="overflow-x-auto mb-6">
         {mode === 'Unified' ? (
           <table className="w-full text-sm border-collapse">
@@ -331,19 +325,18 @@ export default function LineupSwapGrid({
         )}
       </div>
 
-      {/* Player picker panel */}
       {activeCell && activeCell.position !== '__new__' && (
-        <div className="border border-zinc-200 rounded-lg p-4 bg-white">
+        <div className="border border-zinc-200 dark:border-zinc-700 rounded-lg p-4 bg-white dark:bg-zinc-900">
           <div className="flex items-center justify-between mb-3">
-            <p className="text-sm font-medium text-zinc-700">
+            <p className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
               Assign <span className="font-semibold">{activeCell.position}</span> — Inning {activeCell.inning}
               {activeCellCurrentPlayerId && (
-                <span className="ml-2 text-zinc-400 font-normal">
+                <span className="ml-2 text-zinc-400 dark:text-zinc-500 font-normal">
                   (currently {playerMap[activeCellCurrentPlayerId]?.name ?? activeCellCurrentPlayerId})
                 </span>
               )}
             </p>
-            <button onClick={() => setActiveCell(null)} className="text-zinc-400 hover:text-zinc-600 text-xs">
+            <button onClick={() => setActiveCell(null)} className="text-zinc-400 dark:text-zinc-500 hover:text-zinc-600 dark:hover:text-zinc-300 text-xs">
               ✕ Close
             </button>
           </div>
@@ -352,7 +345,7 @@ export default function LineupSwapGrid({
               <button
                 onClick={() => handleAssign(activeCell.inning, activeCell.position, null)}
                 disabled={saving}
-                className="px-3 py-1.5 text-xs rounded-md border border-red-200 text-red-600 hover:bg-red-50 disabled:opacity-50"
+                className="px-3 py-1.5 text-xs rounded-md border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950 disabled:opacity-50"
               >
                 Remove
               </button>
@@ -367,53 +360,51 @@ export default function LineupSwapGrid({
                   disabled={saving || isCurrent}
                   className={`px-3 py-1.5 text-xs rounded-md border transition-colors disabled:opacity-40 ${
                     isCurrent
-                      ? 'border-blue-300 bg-blue-50 text-blue-800'
+                      ? 'border-blue-300 dark:border-blue-700 bg-blue-50 dark:bg-blue-950 text-blue-800 dark:text-blue-200'
                       : alreadyThisInning
-                      ? 'border-zinc-200 text-zinc-500 hover:bg-zinc-50'
-                      : 'border-zinc-200 text-zinc-800 hover:bg-zinc-50'
+                      ? 'border-zinc-200 dark:border-zinc-700 text-zinc-500 dark:text-zinc-400 hover:bg-zinc-50 dark:hover:bg-zinc-800'
+                      : 'border-zinc-200 dark:border-zinc-700 text-zinc-800 dark:text-zinc-200 hover:bg-zinc-50 dark:hover:bg-zinc-800'
                   }`}
                 >
                   {info.name}
                   {alreadyThisInning && !isCurrent && (
-                    <span className="ml-1 text-zinc-400">({alreadyThisInning})</span>
+                    <span className="ml-1 text-zinc-400 dark:text-zinc-500">({alreadyThisInning})</span>
                   )}
                 </button>
               )
             })}
           </div>
-          {saving && <p className="mt-2 text-xs text-zinc-400">Saving…</p>}
+          {saving && <p className="mt-2 text-xs text-zinc-400 dark:text-zinc-500">Saving…</p>}
         </div>
       )}
 
-      {/* Add slot panel: player known, pick position */}
       {pendingAddSlot && (
-        <div className="border border-zinc-200 rounded-lg p-4 bg-white">
+        <div className="border border-zinc-200 dark:border-zinc-700 rounded-lg p-4 bg-white dark:bg-zinc-900">
           <div className="flex items-center justify-between mb-3">
-            <p className="text-sm font-medium text-zinc-700">
+            <p className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
               Assign <span className="font-semibold">{playerMap[pendingAddSlot.playerId]?.name}</span> — Inning {pendingAddSlot.inning}
             </p>
-            <button onClick={() => setPendingAddSlot(null)} className="text-zinc-400 hover:text-zinc-600 text-xs">✕ Close</button>
+            <button onClick={() => setPendingAddSlot(null)} className="text-zinc-400 dark:text-zinc-500 hover:text-zinc-600 dark:hover:text-zinc-300 text-xs">✕ Close</button>
           </div>
-          <p className="text-xs text-zinc-500 mb-2">Pick a position:</p>
+          <p className="text-xs text-zinc-500 dark:text-zinc-400 mb-2">Pick a position:</p>
           <div className="flex flex-wrap gap-2">
             {ALL_POSITIONS.filter((p) => !fieldingSlots.some((s) => s.inning === pendingAddSlot.inning && s.position === p)).map((pos) => (
               <button
                 key={pos}
                 onClick={() => handleAssign(pendingAddSlot.inning, pos, pendingAddSlot.playerId)}
                 disabled={saving}
-                className="px-3 py-1.5 text-xs rounded-md border border-zinc-200 text-zinc-800 hover:bg-zinc-50 disabled:opacity-50"
+                className="px-3 py-1.5 text-xs rounded-md border border-zinc-200 dark:border-zinc-700 text-zinc-800 dark:text-zinc-200 hover:bg-zinc-50 dark:hover:bg-zinc-800 disabled:opacity-50"
               >
                 {pos}
               </button>
             ))}
             {ALL_POSITIONS.every((p) => fieldingSlots.some((s) => s.inning === pendingAddSlot.inning && s.position === p)) && (
-              <p className="text-xs text-zinc-400">All positions filled this inning.</p>
+              <p className="text-xs text-zinc-400 dark:text-zinc-500">All positions filled this inning.</p>
             )}
           </div>
-          {saving && <p className="mt-2 text-xs text-zinc-400">Saving…</p>}
+          {saving && <p className="mt-2 text-xs text-zinc-400 dark:text-zinc-500">Saving…</p>}
         </div>
       )}
     </div>
   )
 }
-
