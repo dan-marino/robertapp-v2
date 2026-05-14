@@ -39,7 +39,7 @@ export default async function LineupPage({
   return (
     <div className="max-w-4xl mx-auto px-4 py-8">
       <div className="mb-6">
-        <Link href={`/games/${gameId}`} className="text-sm text-zinc-500 hover:text-zinc-800">
+        <Link href={`/games/${gameId}`} className="text-sm text-zinc-500 dark:text-zinc-400 hover:text-zinc-800 dark:hover:text-zinc-200">
           ← {game.date}
         </Link>
       </div>
@@ -47,7 +47,7 @@ export default async function LineupPage({
       <div className="flex items-center justify-between mb-8">
         <div>
           <h1 className="text-2xl font-semibold mb-1">Lineup</h1>
-          <p className="text-sm text-zinc-500">
+          <p className="text-sm text-zinc-500 dark:text-zinc-400">
             {game.date} · {game.inningCount} innings · {game.mode} mode
           </p>
         </div>
@@ -56,7 +56,7 @@ export default async function LineupPage({
             <a
               href={`/api/games/${gameId}/lineup/export`}
               download
-              className="px-4 py-2 bg-zinc-100 text-zinc-800 text-sm rounded-md border border-zinc-300 hover:bg-zinc-200"
+              className="px-4 py-2 bg-zinc-100 dark:bg-zinc-800 text-zinc-800 dark:text-zinc-200 text-sm rounded-md border border-zinc-300 dark:border-zinc-600 hover:bg-zinc-200 dark:hover:bg-zinc-700"
             >
               Export CSV
             </a>
@@ -67,7 +67,7 @@ export default async function LineupPage({
       </div>
 
       {!hasLineup && (
-        <p className="text-zinc-400 text-sm">
+        <p className="text-zinc-400 dark:text-zinc-500 text-sm">
           No lineup generated yet. Save RSVPs and click &quot;Generate Lineup&quot; above.
         </p>
       )}

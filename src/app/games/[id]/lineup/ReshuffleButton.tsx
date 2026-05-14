@@ -26,7 +26,7 @@ export default function ReshuffleButton({ gameId }: { gameId: string }) {
       <button
         onClick={handleReshuffle}
         disabled={loading}
-        className="px-4 py-2 bg-zinc-100 text-zinc-800 text-sm rounded-md border border-zinc-300 hover:bg-zinc-200 disabled:opacity-50"
+        className="px-4 py-2 bg-zinc-100 dark:bg-zinc-800 text-zinc-800 dark:text-zinc-200 text-sm rounded-md border border-zinc-300 dark:border-zinc-600 hover:bg-zinc-200 dark:hover:bg-zinc-700 disabled:opacity-50"
       >
         {loading ? 'Reshuffling…' : 'Reshuffle'}
       </button>
