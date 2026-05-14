@@ -27,11 +27,11 @@ const TIER_LABELS: Record<PreferenceTier | '', string> = {
 }
 
 const TIER_COLORS: Record<PreferenceTier | '', string> = {
-  '': 'bg-zinc-100 text-zinc-400',
-  Tier1: 'bg-green-100 text-green-800',
-  Tier2: 'bg-blue-100 text-blue-800',
-  Tier3: 'bg-yellow-100 text-yellow-800',
-  Anti: 'bg-red-100 text-red-700',
+  '': 'bg-zinc-100 dark:bg-zinc-800 text-zinc-400 dark:text-zinc-500',
+  Tier1: 'bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200',
+  Tier2: 'bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200',
+  Tier3: 'bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-200',
+  Anti: 'bg-red-100 dark:bg-red-900 text-red-700 dark:text-red-300',
 }
 
 function buildEmptyMap() {
@@ -86,26 +86,28 @@ export default function AddPlayerForm({ onAdd }: Props) {
     setAdding(false)
   }
 
+  const inputClass = "border border-zinc-200 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-zinc-400"
+
   return (
     <form onSubmit={handleSubmit}>
       <div className="flex gap-3 items-end mb-3">
         <div className="flex-1">
-          <label className="block text-xs text-zinc-500 mb-1">Name</label>
+          <label className="block text-xs text-zinc-500 dark:text-zinc-400 mb-1">Name</label>
           <input
             type="text"
             value={name}
             onChange={(e) => setName(e.target.value)}
             required
             placeholder="Player name"
-            className="w-full border border-zinc-200 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-zinc-400"
+            className={`w-full ${inputClass}`}
           />
         </div>
         <div>
-          <label className="block text-xs text-zinc-500 mb-1">Gender</label>
+          <label className="block text-xs text-zinc-500 dark:text-zinc-400 mb-1">Gender</label>
           <select
             value={gender}
             onChange={(e) => setGender(e.target.value as 'M' | 'F')}
-            className="border border-zinc-200 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-zinc-400"
+            className={inputClass}
           >
             <option value="M">M</option>
             <option value="F">F</option>
@@ -123,14 +125,14 @@ export default function AddPlayerForm({ onAdd }: Props) {
       <button
         type="button"
         onClick={() => setShowPrefs((v) => !v)}
-        className="text-xs text-zinc-400 hover:text-zinc-600 transition-colors mb-3"
+        className="text-xs text-zinc-400 dark:text-zinc-500 hover:text-zinc-600 dark:hover:text-zinc-300 transition-colors mb-3"
       >
         {showPrefs ? '▲ Hide preferences' : '▼ Add preferences'}
       </button>
 
       {showPrefs && (
         <div>
-          <p className="text-xs text-zinc-400 mb-2">Click a position to cycle its tier.</p>
+          <p className="text-xs text-zinc-400 dark:text-zinc-500 mb-2">Click a position to cycle its tier.</p>
           <div className="grid grid-cols-5 gap-2">
             {ALL_POSITIONS.map((pos) => {
               const tier = tierMap.get(pos) ?? ''
@@ -139,7 +141,7 @@ export default function AddPlayerForm({ onAdd }: Props) {
                   key={pos}
                   type="button"
                   onClick={() => cycleNext(pos)}
-                  className={`rounded-md px-3 py-2 text-xs font-medium flex flex-col items-center gap-1 border border-transparent hover:border-zinc-300 transition-colors ${TIER_COLORS[tier]}`}
+                  className={`rounded-md px-3 py-2 text-xs font-medium flex flex-col items-center gap-1 border border-transparent hover:border-zinc-300 dark:hover:border-zinc-600 transition-colors ${TIER_COLORS[tier]}`}
                 >
                   <span className="font-semibold">{pos}</span>
                   <span>{TIER_LABELS[tier]}</span>

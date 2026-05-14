@@ -39,19 +39,18 @@ export default function CSVImporter() {
       setError('An unexpected error occurred')
     } finally {
       setLoading(false)
-      // Reset the file input so the same file can be re-selected
       if (inputRef.current) inputRef.current.value = ''
     }
   }
 
   return (
-    <div className="border border-zinc-200 rounded-lg px-4 py-4">
-      <p className="text-xs font-medium text-zinc-500 uppercase tracking-wide mb-3">
+    <div className="border border-zinc-200 dark:border-zinc-700 rounded-lg px-4 py-4">
+      <p className="text-xs font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wide mb-3">
         Bulk Import via CSV
       </p>
 
       <label className="inline-flex items-center gap-2 cursor-pointer">
-        <span className="px-3 py-1.5 bg-zinc-100 text-zinc-700 text-sm rounded-md hover:bg-zinc-200 transition-colors">
+        <span className="px-3 py-1.5 bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-200 text-sm rounded-md hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-colors">
           {loading ? 'Importing…' : 'Choose CSV file'}
         </span>
         <input
@@ -66,15 +65,15 @@ export default function CSVImporter() {
 
       {result && (
         <div className="mt-3 text-sm">
-          <p className="text-green-700 font-medium">
+          <p className="text-green-700 dark:text-green-400 font-medium">
             Imported {result.imported} player{result.imported !== 1 ? 's' : ''}
           </p>
           {result.skipped.length > 0 && (
             <div className="mt-1">
-              <p className="text-zinc-500">
+              <p className="text-zinc-500 dark:text-zinc-400">
                 Skipped ({result.skipped.length}):
               </p>
-              <ul className="list-disc list-inside text-zinc-400 text-xs mt-0.5">
+              <ul className="list-disc list-inside text-zinc-400 dark:text-zinc-500 text-xs mt-0.5">
                 {result.skipped.map((name) => (
                   <li key={name}>{name}</li>
                 ))}
@@ -85,7 +84,7 @@ export default function CSVImporter() {
       )}
 
       {error && (
-        <p className="mt-3 text-sm text-red-600">{error}</p>
+        <p className="mt-3 text-sm text-red-600 dark:text-red-400">{error}</p>
       )}
     </div>
   )
