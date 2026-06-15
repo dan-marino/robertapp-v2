@@ -41,8 +41,34 @@ describe('basic output shape', () => {
 // ─── Innings fairness ────────────────────────────────────────────────────────
 
 describe('±1 inning fairness', () => {
-  it('all players play within ±1 inning of each other (12-player roster)', () => {
-    const roster = makeRoster(9, 3) // 12 players
+  // With gender protection, women always play when womenCount === 3, so the
+  // ±1 guarantee is per-gender: all men within ±1, all women within ±1.
+
+  it('all men play within ±1 inning of each other (12-player roster)', () => {
+    const roster = makeRoster(9, 3) // 12 players; women never sit
+    const result = generateFieldingGrid({
+      activeRoster: roster,
+      preferences: [],
+      positionHistory: [],
+      latePlayerIds: [],
+      inningCount: 6,
+    })
+
+    const countByPlayer = new Map<string, number>()
+    for (const a of result.assignments) {
+      countByPlayer.set(a.playerId, (countByPlayer.get(a.playerId) ?? 0) + 1)
+    }
+
+    const menCounts = roster
+      .filter((p) => p.gender === 'M')
+      .map((p) => countByPlayer.get(p.id) ?? 0)
+    const min = Math.min(...menCounts)
+    const max = Math.max(...menCounts)
+    expect(max - min).toBeLessThanOrEqual(1)
+  })
+
+  it('all players play within ±1 inning of each other when no gender protection needed (10-player roster)', () => {
+    const roster = makeRoster(7, 3) // 10 players; nobody sits
     const result = generateFieldingGrid({
       activeRoster: roster,
       preferences: [],
@@ -440,5 +466,77 @@ describe('batting order sit priority', () => {
     })
     const inning1PlayerIds = result.assignments.filter((a) => a.inning === 1).map((a) => a.playerId)
     expect(inning1PlayerIds).toContain('w2') // bottom-of-order plays inning 1
+  })
+})
+
+// ─── Women playing time protection ───────────────────────────────────────────
+
+describe('women playing time protection', () => {
+  it('women never sit when there are exactly 3 women (13-player roster)', () => {
+    // 13 players (10M + 3F): 3 sit per inning.
+    // Since womenCount === 3, sitting any woman drops below the 3-woman minimum.
+    // All 3 women must play every inning; men fill all sit slots.
+    const roster = makeRoster(10, 3)
+    const womenIds = new Set(roster.filter((p) => p.gender === 'F').map((p) => p.id))
+
+    for (let run = 0; run < 20; run++) {
+      const result = generateFieldingGrid({
+        activeRoster: roster,
+        preferences: [],
+        positionHistory: [],
+        latePlayerIds: [],
+        inningCount: 6,
+      })
+
+      for (let inning = 1; inning <= 6; inning++) {
+        const womenPlaying = result.assignments
+          .filter((a) => a.inning === inning && womenIds.has(a.playerId))
+        expect(womenPlaying.length).toBe(3)
+      }
+    }
+  })
+
+  it('always has 3 women on the field every inning regardless of roster size (14-player roster)', () => {
+    const roster = makeRoster(11, 3)
+    const womenIds = new Set(roster.filter((p) => p.gender === 'F').map((p) => p.id))
+
+    for (let run = 0; run < 20; run++) {
+      const result = generateFieldingGrid({
+        activeRoster: roster,
+        preferences: [],
+        positionHistory: [],
+        latePlayerIds: [],
+        inningCount: 6,
+      })
+
+      for (let inning = 1; inning <= 6; inning++) {
+        const womenPlaying = result.assignments
+          .filter((a) => a.inning === inning && womenIds.has(a.playerId))
+        expect(womenPlaying.length).toBe(3)
+      }
+    }
+  })
+
+  it('at most 1 woman sits per inning when there are 4 women (14-player roster)', () => {
+    // 10M + 4F = 14 players: 4 sit per inning, maxWomenSitsPerInning = 1.
+    // At most 1 woman may sit each inning → at least 3 women always on field.
+    const roster = makeRoster(10, 4)
+    const womenIds = new Set(roster.filter((p) => p.gender === 'F').map((p) => p.id))
+
+    for (let run = 0; run < 20; run++) {
+      const result = generateFieldingGrid({
+        activeRoster: roster,
+        preferences: [],
+        positionHistory: [],
+        latePlayerIds: [],
+        inningCount: 6,
+      })
+
+      for (let inning = 1; inning <= 6; inning++) {
+        const womenPlaying = result.assignments
+          .filter((a) => a.inning === inning && womenIds.has(a.playerId))
+        expect(womenPlaying.length).toBeGreaterThanOrEqual(3)
+      }
+    }
   })
 })

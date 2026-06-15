@@ -106,51 +106,81 @@ function schedulePitchers(pitcherIds: string[], inningCount: InningCount): Map<s
 
 /**
  * Pre-compute which inning each player sits.
- * Guarantees every player's inning count is within ±1 of each other.
  * Late players always sit inning 1 (consuming one of their sits).
+ *
+ * Gender protection (when womenIds is provided):
+ *   - At least 3 women must be on the field every inning.
+ *   - maxWomenSitsPerInning = max(0, womenCount − 3).
+ *   - Non-late women are excluded from the sit pool when maxWomenSitsPerInning === 0
+ *     (i.e. when there are only 3 women), so men absorb all sit slots.
+ *   - When women can sit (4+ women), men are ordered first so they absorb extra sits
+ *     before any woman does, and a swap pass caps women per inning at the max.
+ *   - ±1 fairness is guaranteed within the eligible sit pool (men among themselves,
+ *     women among themselves when they can sit).
+ *
  * Returns Map<inning, Set<playerId>>.
  */
 function computeSitSchedule(
   rosterIds: string[],
   latePlayerIds: string[],
   inningCount: InningCount,
-  battingOrder?: string[]
+  battingOrder?: string[],
+  womenIds?: Set<string>
 ): Map<number, Set<string>> {
   const n = rosterIds.length
   const slotsPerInning = 10
   const sitsCapPerInning = Math.max(0, n - slotsPerInning)
-  const totalSits = sitsCapPerInning * inningCount // total sit-slots needed
+  const totalSits = sitsCapPerInning * inningCount
 
   const sitsByInning = new Map<number, Set<string>>()
   for (let i = 1; i <= inningCount; i++) sitsByInning.set(i, new Set())
 
   if (totalSits === 0) return sitsByInning
 
-  // Each player sits either floor(totalSits/n) or ceil(totalSits/n) times
-  const baseSits = Math.floor(totalSits / n)
-  const extraSits = totalSits % n
+  // How many women may sit per inning without dropping below 3 women on field.
+  const womenCount = womenIds?.size ?? 0
+  const maxWomenSitsPerInning = Math.max(0, womenCount - 3)
 
-  // Order roster for sit distribution — late players go last (forced to inning 1 via override).
-  // When battingOrder is provided, sort non-late players by batting position ascending so that
-  // top-of-order batters receive their sits in earlier innings (inning 1 first).
-  // Without battingOrder, fall back to a random shuffle.
   const lateSet = new Set(latePlayerIds)
   const nonLateIds = rosterIds.filter((id) => !lateSet.has(id))
-  const nonLate = battingOrder && battingOrder.length > 0
-    ? [...nonLateIds].sort((a, b) => {
-        const ai = battingOrder.indexOf(a)
-        const bi = battingOrder.indexOf(b)
-        const aPos = ai === -1 ? nonLateIds.length : ai
-        const bPos = bi === -1 ? nonLateIds.length : bi
-        return aPos - bPos
-      })
-    : shuffle(nonLateIds)
   const late = rosterIds.filter((id) => lateSet.has(id))
-  const ordered = [...nonLate, ...late]
+
+  // Build the non-late sit pool:
+  //   battingOrder   → sort by batting position (top-of-order sits first)
+  //   no women slots → exclude non-late women entirely; men fill all sit slots
+  //   women can sit  → men first (shuffled), then women (shuffled)
+  //   no gender info → random shuffle
+  let nonLateSitPool: string[]
+  if (battingOrder && battingOrder.length > 0) {
+    nonLateSitPool = [...nonLateIds].sort((a, b) => {
+      const ai = battingOrder.indexOf(a)
+      const bi = battingOrder.indexOf(b)
+      const aPos = ai === -1 ? nonLateIds.length : ai
+      const bPos = bi === -1 ? nonLateIds.length : bi
+      return aPos - bPos
+    })
+  } else if (womenIds && maxWomenSitsPerInning === 0) {
+    // Women must never sit (3 women on roster): only men in the pool.
+    nonLateSitPool = shuffle(nonLateIds.filter((id) => !womenIds.has(id)))
+  } else if (womenIds && womenIds.size > 0) {
+    // Women can sit but men absorb extra sits first.
+    const nonLateMen = shuffle(nonLateIds.filter((id) => !womenIds.has(id)))
+    const nonLateWomen = shuffle(nonLateIds.filter((id) => womenIds.has(id)))
+    nonLateSitPool = [...nonLateMen, ...nonLateWomen]
+  } else {
+    nonLateSitPool = shuffle(nonLateIds)
+  }
+
+  // Late players are always in the pool (they must sit inning 1).
+  const ordered = [...nonLateSitPool, ...late]
+  const poolSize = ordered.length
+
+  // Each pool member sits baseSits or baseSits+1 times.
+  const baseSits = Math.floor(totalSits / poolSize)
+  const extraSits = totalSits % poolSize
 
   // Build interleaved sit list: round-by-round so the cursor-based distributor
-  // spreads sits evenly across innings. Grouped order (P1,P1,P2,P2,...) caused
-  // the cursor to exhaust all innings before reaching tail players.
+  // spreads sits evenly across innings.
   const maxRounds = baseSits + 1
   const sitList: string[] = []
   for (let round = 0; round < maxRounds; round++) {
@@ -160,25 +190,19 @@ function computeSitSchedule(
     })
   }
 
-  // Round-robin distribute sits across innings, ensuring each inning gets sitsCapPerInning sitters
-  // Late players: their first sit must be inning 1
-  // Strategy: first assign late-player sits to inning 1, then distribute rest sequentially
-
   let inningCursor = 1
 
-  // Force late players into inning 1 first
+  // Force late players into inning 1 first.
   for (const id of late) {
     if (sitsByInning.get(1)!.size < sitsCapPerInning) {
       sitsByInning.get(1)!.add(id)
-      // Remove one occurrence of this id from sitList
       const idx = sitList.indexOf(id)
       if (idx !== -1) sitList.splice(idx, 1)
     }
   }
 
-  // Distribute remaining sits sequentially
+  // Distribute remaining sits sequentially.
   for (const id of sitList) {
-    // Find next inning with capacity (that doesn't already have this player)
     while (
       inningCursor <= inningCount &&
       (sitsByInning.get(inningCursor)!.size >= sitsCapPerInning ||
@@ -188,6 +212,41 @@ function computeSitSchedule(
     }
     if (inningCursor > inningCount) break
     sitsByInning.get(inningCursor)!.add(id)
+  }
+
+  // ─── Gender protection swap pass ─────────────────────────────────────────
+  // When women can sit (4+ women) the sequential distributor may cluster more
+  // women than allowed into one inning.  Swap excess women with men from
+  // innings that are under the women cap.  Never displace late players.
+  if (womenIds && maxWomenSitsPerInning > 0) {
+    for (let inning = 1; inning <= inningCount; inning++) {
+      const sitters = sitsByInning.get(inning)!
+      const womenHere = [...sitters].filter((id) => womenIds!.has(id))
+      if (womenHere.length <= maxWomenSitsPerInning) continue
+
+      for (let i = maxWomenSitsPerInning; i < womenHere.length; i++) {
+        const womanToMove = womenHere[i]
+        if (lateSet.has(womanToMove)) continue
+
+        for (let other = 1; other <= inningCount; other++) {
+          if (other === inning) continue
+          const otherSitters = sitsByInning.get(other)!
+          const otherWomenCount = [...otherSitters].filter((id) => womenIds!.has(id)).length
+          if (otherWomenCount >= maxWomenSitsPerInning) continue
+          if (otherSitters.has(womanToMove)) continue
+          const manToSwap = [...otherSitters].find(
+            (id) => !womenIds!.has(id) && !sitters.has(id) && !lateSet.has(id)
+          )
+          if (manToSwap !== undefined) {
+            sitters.delete(womanToMove)
+            sitters.add(manToSwap)
+            otherSitters.delete(manToSwap)
+            otherSitters.add(womanToMove)
+            break
+          }
+        }
+      }
+    }
   }
 
   return sitsByInning
@@ -304,8 +363,9 @@ export function generateFieldingGrid({
   const capped = pitcherIds.slice(0, 4)
   const pitcherSchedule = schedulePitchers(capped, inningCount)
 
-  // Pre-compute sitting schedule
-  const sitSchedule = computeSitSchedule(rosterIds, latePlayerIds, inningCount, battingOrder)
+  // Pre-compute sitting schedule (pass women IDs so they are protected from extra sits)
+  const womenIds = new Set(activeRoster.filter((p) => p.gender === 'F').map((p) => p.id))
+  const sitSchedule = computeSitSchedule(rosterIds, latePlayerIds, inningCount, battingOrder, womenIds)
 
   const allAssignments: FieldingAssignment[] = []
 
