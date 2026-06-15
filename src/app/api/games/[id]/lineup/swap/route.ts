@@ -15,7 +15,7 @@ import type { RSVPStatus, Position, PositionPreference, PreferenceTier, GenderGr
 
 interface SlotRef {
   inning: number
-  position: string
+  playerId: string
 }
 
 export async function POST(
@@ -29,7 +29,10 @@ export async function POST(
 
   const body = await req.json().catch(() => null)
   if (!body || !body.slot1 || !body.slot2) {
-    return Response.json({ error: 'Body must include slot1 and slot2 with { inning, position }' }, { status: 400 })
+    return Response.json(
+      { error: 'Body must include slot1 and slot2 with { inning, playerId }' },
+      { status: 400 }
+    )
   }
 
   const { slot1, slot2 }: { slot1: SlotRef; slot2: SlotRef } = body
@@ -37,27 +40,36 @@ export async function POST(
   // Fetch all fielding slots for this game
   const fs = await db.select().from(fieldingSlots).where(eq(fieldingSlots.gameId, gameId))
 
-  const matchSlot = (s: typeof fs[number], ref: SlotRef) =>
-    s.inning === ref.inning && s.position === ref.position
+  const s1 = fs.find((s) => s.inning === slot1.inning && s.playerId === slot1.playerId) ?? null
+  const s2 = fs.find((s) => s.inning === slot2.inning && s.playerId === slot2.playerId) ?? null
 
-  const s1 = fs.find((s) => matchSlot(s, slot1))
-  const s2 = fs.find((s) => matchSlot(s, slot2))
-
-  if (!s1 || !s2) {
-    return Response.json({ error: 'One or both slots not found in this lineup' }, { status: 404 })
+  // Perform swap by updating player IDs in whichever slots exist
+  const updates: Promise<unknown>[] = []
+  if (s1 && s2) {
+    // Both have slots: swap player IDs between the two position records
+    updates.push(
+      db.update(fieldingSlots).set({ playerId: slot2.playerId }).where(eq(fieldingSlots.id, s1.id)),
+      db.update(fieldingSlots).set({ playerId: slot1.playerId }).where(eq(fieldingSlots.id, s2.id))
+    )
+  } else if (s1) {
+    // Only slot1 player has a position: move it to slot2 player
+    updates.push(
+      db.update(fieldingSlots).set({ playerId: slot2.playerId }).where(eq(fieldingSlots.id, s1.id))
+    )
+  } else if (s2) {
+    // Only slot2 player has a position: move it to slot1 player
+    updates.push(
+      db.update(fieldingSlots).set({ playerId: slot1.playerId }).where(eq(fieldingSlots.id, s2.id))
+    )
   }
+  // If neither has a slot, no-op — fall through to validation/response
 
-  // Swap player assignments
-  await Promise.all([
-    db.update(fieldingSlots).set({ playerId: s2.playerId }).where(eq(fieldingSlots.id, s1.id)),
-    db.update(fieldingSlots).set({ playerId: s1.playerId }).where(eq(fieldingSlots.id, s2.id)),
-  ])
+  await Promise.all(updates)
 
   // Rebuild lineup for validation
   const updatedFs = await db.select().from(fieldingSlots).where(eq(fieldingSlots.gameId, gameId))
   const bs = await db.select().from(battingSlots).where(eq(battingSlots.gameId, gameId))
 
-  // Fetch active roster
   const rosterRows = await db
     .select({ player: players })
     .from(rosters)
@@ -82,9 +94,10 @@ export async function POST(
   const activeRoster = getActiveRoster(allPlayers, rsvpList)
 
   const activePids = activeRoster.map((p) => p.id)
-  const prefRows = activePids.length > 0
-    ? await db.select().from(positionPreferences).where(inArray(positionPreferences.playerId, activePids))
-    : []
+  const prefRows =
+    activePids.length > 0
+      ? await db.select().from(positionPreferences).where(inArray(positionPreferences.playerId, activePids))
+      : []
   const preferences: PositionPreference[] = prefRows.map((r) => ({
     playerId: r.playerId,
     position: r.position as Position,
