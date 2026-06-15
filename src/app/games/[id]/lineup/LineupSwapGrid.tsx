@@ -103,7 +103,6 @@ export default function LineupSwapGrid({
     slot1: { inning: number; playerId: string },
     slot2: { inning: number; playerId: string }
   ) {
-    setSaving(true)
     setSaveError(null)
     const res = await fetch(`/api/games/${gameId}/lineup/swap`, {
       method: 'POST',
@@ -131,6 +130,7 @@ export default function LineupSwapGrid({
       // Same inning, different player — swap and clear selection
       const first = selectedSlot
       setSelectedSlot(null)
+      setSaving(true)
       handleSwap(first, { inning, playerId })
     } else {
       // No selection, or different inning — select this cell
