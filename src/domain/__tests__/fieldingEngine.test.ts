@@ -463,6 +463,50 @@ describe('short on women: position exclusions', () => {
     expect(catcherAssignments).toHaveLength(0)
     expect(rfAssignments).toHaveLength(0)
   })
+
+  it('never puts more than 7 men on the field when only 2 women are present (large roster)', () => {
+    // 12 players (10M + 2F): previously the engine would restore C and put
+    // 8 men on the field. Field size must be capped at 9 (7M + 2F).
+    const roster = makeRoster(10, 2)
+    const result = generateFieldingGrid({
+      activeRoster: roster,
+      preferences: [],
+      positionHistory: [],
+      latePlayerIds: [],
+      inningCount: 6,
+    })
+    for (let inning = 1; inning <= 6; inning++) {
+      const inningAssignments = result.assignments.filter((a) => a.inning === inning)
+      const menOnField = inningAssignments.filter((a) =>
+        roster.find((p) => p.id === a.playerId)?.gender === 'M'
+      ).length
+      expect(menOnField).toBeLessThanOrEqual(7)
+      expect(inningAssignments).toHaveLength(9)
+      expect(inningAssignments.filter((a) => a.position === 'C')).toHaveLength(0)
+    }
+  })
+
+  it('never puts more than 7 men on the field when only 1 woman is present (large roster)', () => {
+    // 11 players (10M + 1F): field size must be capped at 8 (7M + 1F).
+    const roster = makeRoster(10, 1)
+    const result = generateFieldingGrid({
+      activeRoster: roster,
+      preferences: [],
+      positionHistory: [],
+      latePlayerIds: [],
+      inningCount: 6,
+    })
+    for (let inning = 1; inning <= 6; inning++) {
+      const inningAssignments = result.assignments.filter((a) => a.inning === inning)
+      const menOnField = inningAssignments.filter((a) =>
+        roster.find((p) => p.id === a.playerId)?.gender === 'M'
+      ).length
+      expect(menOnField).toBeLessThanOrEqual(7)
+      expect(inningAssignments).toHaveLength(8)
+      expect(inningAssignments.filter((a) => a.position === 'C')).toHaveLength(0)
+      expect(inningAssignments.filter((a) => a.position === 'RF')).toHaveLength(0)
+    }
+  })
 })
 
 // ─── Disqualification warning ─────────────────────────────────────────────────

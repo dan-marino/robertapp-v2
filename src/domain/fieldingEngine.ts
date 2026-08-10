@@ -114,6 +114,11 @@ function schedulePitchers(pitcherIds: string[], inningCount: InningCount): Map<s
  *   - ±1 fairness is guaranteed within the eligible sit pool (men among themselves,
  *     women among themselves when they can sit).
  *
+ * fieldSize: effective number of positions available per inning (default 10).
+ *   Pass a smaller value when gender rules reduce the playable field
+ *   (e.g. 9 with 2 women, 8 with 1 woman) so that extra men are scheduled
+ *   to sit and fairness is maintained across the sit pool.
+ *
  * Returns Map<inning, Set<playerId>>.
  */
 function computeSitSchedule(
@@ -121,10 +126,11 @@ function computeSitSchedule(
   latePlayerIds: string[],
   inningCount: InningCount,
   battingOrder?: string[],
-  womenIds?: Set<string>
+  womenIds?: Set<string>,
+  fieldSize: number = 10
 ): Map<number, Set<string>> {
   const n = rosterIds.length
-  const slotsPerInning = 10
+  const slotsPerInning = fieldSize
   const sitsCapPerInning = Math.max(0, n - slotsPerInning)
   const totalSits = sitsCapPerInning * inningCount
 
@@ -361,7 +367,16 @@ export function generateFieldingGrid({
 
   // Pre-compute sitting schedule (pass women IDs so they are protected from extra sits)
   const womenIds = new Set(activeRoster.filter((p) => p.gender === 'F').map((p) => p.id))
-  const sitSchedule = computeSitSchedule(rosterIds, latePlayerIds, inningCount, battingOrder, womenIds)
+
+  // When fewer than 3 women are available the field shrinks: max 7 men + however
+  // many women there are.  Pass this to the sit schedule so extra men are
+  // distributed fairly rather than left unassigned at field time.
+  const gameWomenCount = womenIds.size
+  const effectiveFieldSize = (gameWomenCount > 0 && gameWomenCount < 3)
+    ? gameWomenCount + 7
+    : 10
+
+  const sitSchedule = computeSitSchedule(rosterIds, latePlayerIds, inningCount, battingOrder, womenIds, effectiveFieldSize)
 
   // ─── Pitcher sit protection ───────────────────────────────────────────────
   // If the sit schedule placed a pitcher in one of their own pitching innings,
@@ -417,16 +432,23 @@ export function generateFieldingGrid({
 
     // Determine available positions based on gender.
     // With <3 women: leave C blank. With <2 women: also leave RF blank.
-    // However, always keep enough positions to field all active players (fairness invariant).
+    // Max field size when women are short: womenOnField + 7 (max 7 men).
     const women = activePlayers.filter((p) => p.gender === 'F')
     const excluded: Position[] = []
     if (women.length < 3) excluded.push('C')
     if (women.length < 2) excluded.push('RF')
 
+    // Cap field size: when women are short the field shrinks rather than restoring
+    // excluded positions.  0-women games are already disqualified; keep all 10
+    // positions there so we still generate a usable (if invalid) lineup.
+    const inningFieldSize = (women.length > 0 && women.length < 3)
+      ? women.length + 7
+      : ALL_POSITIONS.length
+
     let positions = ALL_POSITIONS.filter((p) => !excluded.includes(p))
 
-    // Restore excluded positions as fallback if we'd leave active players unfielded
-    const targetCount = Math.min(activePlayers.length, ALL_POSITIONS.length)
+    // Restore excluded positions only if needed to reach the (possibly reduced) target.
+    const targetCount = Math.min(activePlayers.length, inningFieldSize)
     for (const pos of excluded) {
       if (positions.length >= targetCount) break
       positions = [...positions, pos]
