@@ -267,6 +267,29 @@ describe('pitcher scheduling', () => {
     expect(coveredInnings).toEqual([1, 2, 3, 4, 5, 6, 7])
   })
 
+  it('pitchers are never displaced from their pitching innings by the sit schedule', () => {
+    // 11-player roster forces 1 sit per inning. Run many trials (shuffle is involved)
+    // to verify that no pitcher ever gets removed from a pitching inning due to sitting.
+    const bigRoster = makeRoster(8, 3) // 11 players
+    for (let trial = 0; trial < 50; trial++) {
+      const result = generateFieldingGrid({
+        activeRoster: bigRoster,
+        preferences: [],
+        positionHistory: [],
+        latePlayerIds: [],
+        pitcherIds: ['m0', 'm1'],
+        inningCount: 6,
+      })
+      // Every inning must have exactly one pitcher assigned
+      for (let inning = 1; inning <= 6; inning++) {
+        const pitcherAssignments = result.assignments.filter(
+          (a) => a.inning === inning && a.position === 'P'
+        )
+        expect(pitcherAssignments).toHaveLength(1)
+      }
+    }
+  })
+
   it('pitchers play non-P positions in their non-pitching innings', () => {
     const result = generateFieldingGrid({
       activeRoster: roster,

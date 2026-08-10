@@ -363,6 +363,47 @@ export function generateFieldingGrid({
   const womenIds = new Set(activeRoster.filter((p) => p.gender === 'F').map((p) => p.id))
   const sitSchedule = computeSitSchedule(rosterIds, latePlayerIds, inningCount, battingOrder, womenIds)
 
+  // ─── Pitcher sit protection ───────────────────────────────────────────────
+  // If the sit schedule placed a pitcher in one of their own pitching innings,
+  // swap them with a non-pitcher player sitting in a non-pitching inning.
+  // This guarantees pitching blocks remain contiguous: once a pitcher leaves
+  // the mound they never return.
+  for (const [pitcherId, pitchingInnings] of pitcherSchedule) {
+    const pitchingSet = new Set(pitchingInnings)
+    for (const protectedInning of pitchingInnings) {
+      const sitters = sitSchedule.get(protectedInning)!
+      if (!sitters.has(pitcherId)) continue
+
+      // Find another inning where we can move this pitcher's sit.
+      let swapped = false
+      for (let other = 1; other <= inningCount && !swapped; other++) {
+        if (pitchingSet.has(other)) continue           // can't sit during own pitching block
+        const otherSitters = sitSchedule.get(other)!
+        if (otherSitters.has(pitcherId)) continue      // already sitting there
+
+        // Find a player in `other` who is allowed to sit in `protectedInning`.
+        const candidate = [...otherSitters].find((id) => {
+          if (sitters.has(id)) return false            // already sitting in protectedInning
+          if (lateSet.has(id) && protectedInning === 1) return false  // preserve late-sit-inning-1 rule
+          const theirPitchingInnings = pitcherSchedule.get(id)
+          return !theirPitchingInnings?.includes(protectedInning)
+        })
+
+        if (candidate !== undefined) {
+          sitters.delete(pitcherId)
+          sitters.add(candidate)
+          otherSitters.delete(candidate)
+          otherSitters.add(pitcherId)
+          swapped = true
+        }
+      }
+
+      // Edge case: no valid swap found — just free the pitcher from sitting
+      // (one inning will have one fewer sitter; acceptable in extreme rosters).
+      if (!swapped) sitters.delete(pitcherId)
+    }
+  }
+
   const allAssignments: FieldingAssignment[] = []
 
   for (let inning = 1; inning <= inningCount; inning++) {
