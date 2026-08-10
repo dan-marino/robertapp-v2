@@ -421,8 +421,27 @@ export function generateFieldingGrid({
 
   const allAssignments: FieldingAssignment[] = []
 
+  // ─── Pitcher contiguity tracking ─────────────────────────────────────────
+  // Once a player has pitched and then sits or plays a non-P position, they
+  // are permanently banned from pitching again this game.  This applies even
+  // when no explicit pitcherIds are provided (P is assigned freely by the
+  // preference engine).
+  const hasEverPitched = new Set<string>()   // has pitched at least one inning
+  const hasDonePitching = new Set<string>()  // pitched before and has since sat / played non-P
+
   for (let inning = 1; inning <= inningCount; inning++) {
     const sittingThisInning = sitSchedule.get(inning)!
+
+    // Sitting players who have previously pitched are now done pitching.
+    for (const id of sittingThisInning) {
+      if (hasEverPitched.has(id)) hasDonePitching.add(id)
+    }
+    // Late players are absent for inning 1; treat as a sit for this purpose.
+    if (inning === 1) {
+      for (const id of latePlayerIds) {
+        if (hasEverPitched.has(id)) hasDonePitching.add(id)
+      }
+    }
 
     // Players active this inning
     const activePlayers = activeRoster.filter((p) => {
@@ -464,21 +483,46 @@ export function generateFieldingGrid({
       if (pitchingInnings.includes(inning) && activePlayers.some((p) => p.id === pitcherId)) {
         lockedAssignments.push({ inning, playerId: pitcherId, position: 'P' })
         lockedPlayerIds.add(pitcherId)
+        hasEverPitched.add(pitcherId)
       }
     }
 
-    // Assign remaining positions
+    // Assign remaining positions, injecting a synthetic Anti-P preference for
+    // any player whose pitching stint is over.
     const remainingPlayers = activePlayers.filter((p) => !lockedPlayerIds.has(p.id))
     const remainingPositions = activePositions.filter(
       (pos) => !lockedAssignments.some((a) => a.position === pos)
     )
 
+    // Anti entries must come BEFORE original preferences: getPreferenceTier uses
+    // .find() and returns the first match, so the ban must be first in the array.
+    const inningPreferences: PositionPreference[] = hasDonePitching.size > 0
+      ? [
+          ...[...hasDonePitching].map((id) => ({
+            playerId: id,
+            position: 'P' as Position,
+            tier: 'Anti' as const,
+          })),
+          ...preferences,
+        ]
+      : preferences
+
     const flexAssignments = assignPositionsForInning(
       remainingPlayers,
       remainingPositions,
-      preferences,
+      inningPreferences,
       positionHistory
     )
+
+    // Update pitcher state from this inning's flex assignments.
+    for (const a of flexAssignments) {
+      if (a.position === 'P') {
+        hasEverPitched.add(a.playerId)
+      } else if (hasEverPitched.has(a.playerId)) {
+        // Player pitched before but is playing a non-P position this inning.
+        hasDonePitching.add(a.playerId)
+      }
+    }
 
     const inningAssignments: FieldingAssignment[] = [
       ...lockedAssignments,

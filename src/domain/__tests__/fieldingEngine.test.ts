@@ -290,6 +290,36 @@ describe('pitcher scheduling', () => {
     }
   })
 
+  it('no player pitches after sitting or playing a non-P position (free assignment)', () => {
+    // 11-player roster with one strong P-preference player.
+    // The sit schedule will bench them mid-game; they must not come back to pitch.
+    // No explicit pitcherIds — P is assigned freely by the preference engine.
+    const bigRoster = makeRoster(8, 3) // 11 players, 1 sits per inning
+    const preferences: PositionPreference[] = [
+      { playerId: 'm0', position: 'P', tier: 'Tier1' },
+    ]
+    for (let trial = 0; trial < 50; trial++) {
+      const result = generateFieldingGrid({
+        activeRoster: bigRoster,
+        preferences,
+        positionHistory: [],
+        latePlayerIds: [],
+        inningCount: 6,
+      })
+      // For every player, their P innings must form a single contiguous block
+      const playerIds = [...new Set(result.assignments.map((a) => a.playerId))]
+      for (const id of playerIds) {
+        const pitchingInnings = result.assignments
+          .filter((a) => a.playerId === id && a.position === 'P')
+          .map((a) => a.inning)
+          .sort((a, b) => a - b)
+        for (let i = 1; i < pitchingInnings.length; i++) {
+          expect(pitchingInnings[i] - pitchingInnings[i - 1]).toBe(1)
+        }
+      }
+    }
+  })
+
   it('pitchers play non-P positions in their non-pitching innings', () => {
     const result = generateFieldingGrid({
       activeRoster: roster,
