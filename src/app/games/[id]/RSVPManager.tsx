@@ -51,6 +51,11 @@ export default function RSVPManager({ gameId, initialRsvps }: Props) {
     setSaved(false)
   }
 
+  function setAllStatus(status: RSVPStatus) {
+    setRsvps((prev) => prev.map((r) => ({ ...r, status })))
+    setSaved(false)
+  }
+
   async function handleSave() {
     setSaving(true)
     await fetch(`/api/games/${gameId}/rsvps`, {
@@ -68,6 +73,21 @@ export default function RSVPManager({ gameId, initialRsvps }: Props) {
 
   return (
     <div>
+      {rsvps.length > 0 && (
+        <div className="flex items-center gap-2 mb-3">
+          <span className="text-xs text-zinc-400 dark:text-zinc-500">Mark all:</span>
+          {STATUSES.map((s) => (
+            <button
+              key={s}
+              onClick={() => setAllStatus(s)}
+              className={`px-2 py-1 text-xs rounded border font-medium transition-colors ${STATUS_COLORS[s]}`}
+            >
+              {s}
+            </button>
+          ))}
+        </div>
+      )}
+
       {rsvps.length > 0 && (
         <ul className="divide-y divide-zinc-100 dark:divide-zinc-800 border border-zinc-100 dark:border-zinc-800 rounded-lg overflow-hidden mb-4">
           {rsvps.map(({ player, status }) => (
