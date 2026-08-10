@@ -227,6 +227,46 @@ describe('pitcher scheduling', () => {
     expect(counts).toEqual([1, 1, 2, 2])
   })
 
+  it('each multi-inning pitcher pitches consecutive innings', () => {
+    // 2 pitchers: one gets innings 1-3, the other 4-6. Verify no gaps.
+    const result = generateFieldingGrid({
+      activeRoster: roster,
+      preferences: [],
+      positionHistory: [],
+      latePlayerIds: [],
+      pitcherIds: ['m0', 'm1'],
+      inningCount: 6,
+    })
+    for (const id of ['m0', 'm1']) {
+      const pitchingInnings = result.assignments
+        .filter((a) => a.playerId === id && a.position === 'P')
+        .map((a) => a.inning)
+        .sort((a, b) => a - b)
+      if (pitchingInnings.length > 1) {
+        for (let i = 1; i < pitchingInnings.length; i++) {
+          expect(pitchingInnings[i] - pitchingInnings[i - 1]).toBe(1)
+        }
+      }
+    }
+  })
+
+  it('covers all innings with no gaps for non-standard inning counts', () => {
+    // 3 pitchers, 7 innings: should cover all 7 innings consecutively.
+    const result = generateFieldingGrid({
+      activeRoster: roster,
+      preferences: [],
+      positionHistory: [],
+      latePlayerIds: [],
+      pitcherIds: ['m0', 'm1', 'm2'],
+      inningCount: 7,
+    })
+    const coveredInnings = result.assignments
+      .filter((a) => a.position === 'P')
+      .map((a) => a.inning)
+      .sort((a, b) => a - b)
+    expect(coveredInnings).toEqual([1, 2, 3, 4, 5, 6, 7])
+  })
+
   it('pitchers play non-P positions in their non-pitching innings', () => {
     const result = generateFieldingGrid({
       activeRoster: roster,

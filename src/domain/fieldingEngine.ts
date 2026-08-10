@@ -68,37 +68,33 @@ function playerPositionScore(
 
 // ─── Pitcher scheduling ───────────────────────────────────────────────────────
 
+/**
+ * Divides innings into consecutive blocks, one per pitcher.
+ * Each pitcher's innings are always consecutive. When innings don't divide
+ * evenly, earlier pitchers absorb the extra inning(s); pitcher order is
+ * shuffled so the longer stints are distributed randomly.
+ */
 function schedulePitchers(pitcherIds: string[], inningCount: InningCount): Map<string, number[]> {
   const map = new Map<string, number[]>()
-  const innings = Array.from({ length: inningCount }, (_, i) => i + 1)
-
   if (pitcherIds.length === 0) return map
 
-  if (pitcherIds.length === 1) {
-    map.set(pitcherIds[0], innings)
-    return map
-  }
+  const innings = Array.from({ length: inningCount }, (_, i) => i + 1)
+  const n = pitcherIds.length
+  const base = Math.floor(inningCount / n)
+  const extra = inningCount % n
 
-  if (pitcherIds.length === 2) {
-    const half = Math.ceil(inningCount / 2)
-    map.set(pitcherIds[0], innings.slice(0, half))
-    map.set(pitcherIds[1], innings.slice(half))
-    return map
-  }
+  // Shuffle so the pitcher(s) who get the extra inning are random.
+  const ordered = shuffle(pitcherIds)
 
-  if (pitcherIds.length === 3) {
-    for (let i = 0; i < 3; i++) {
-      map.set(pitcherIds[i], innings.slice(i * 2, i * 2 + 2))
+  let start = 0
+  for (let i = 0; i < n; i++) {
+    const count = base + (i < extra ? 1 : 0)
+    if (count > 0) {
+      map.set(ordered[i], innings.slice(start, start + count))
+      start += count
     }
-    return map
   }
 
-  // 4 pitchers: 2+2+1+1
-  const shuffled = shuffle(pitcherIds)
-  map.set(shuffled[0], innings.slice(0, 2))
-  map.set(shuffled[1], innings.slice(2, 4))
-  map.set(shuffled[2], innings.slice(4, 5))
-  map.set(shuffled[3], innings.slice(5, 6))
   return map
 }
 
