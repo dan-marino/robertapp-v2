@@ -384,9 +384,9 @@ describe('short on women: position exclusions', () => {
     expect(catcherAssignments).toHaveLength(0)
   })
 
-  it('drops both Catcher and Left Field when fewer than 2 women are present', () => {
+  it('drops both Catcher and Right Field when fewer than 2 women are present', () => {
     // 8 players (7M + 1F): all 8 play each inning, need 8 positions.
-    // Excluding C+LF leaves exactly 8 — no fallback restore needed.
+    // Excluding C+RF leaves exactly 8 — no fallback restore needed.
     const roster = makeRoster(7, 1)
     const result = generateFieldingGrid({
       activeRoster: roster,
@@ -396,9 +396,9 @@ describe('short on women: position exclusions', () => {
       inningCount: 6,
     })
     const catcherAssignments = result.assignments.filter((a) => a.position === 'C')
-    const lfAssignments = result.assignments.filter((a) => a.position === 'LF')
+    const rfAssignments = result.assignments.filter((a) => a.position === 'RF')
     expect(catcherAssignments).toHaveLength(0)
-    expect(lfAssignments).toHaveLength(0)
+    expect(rfAssignments).toHaveLength(0)
   })
 })
 

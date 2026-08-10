@@ -378,13 +378,13 @@ export function generateFieldingGrid({
       return !sittingThisInning.has(p.id)
     })
 
-    // Determine available positions based on gender
-    // C requires ≥3 women; LF requires ≥2 women — exclude those positions when under-threshold.
+    // Determine available positions based on gender.
+    // With <3 women: leave C blank. With <2 women: also leave RF blank.
     // However, always keep enough positions to field all active players (fairness invariant).
     const women = activePlayers.filter((p) => p.gender === 'F')
     const excluded: Position[] = []
     if (women.length < 3) excluded.push('C')
-    if (women.length < 2) excluded.push('LF')
+    if (women.length < 2) excluded.push('RF')
 
     let positions = ALL_POSITIONS.filter((p) => !excluded.includes(p))
 
