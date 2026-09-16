@@ -2,9 +2,19 @@ import { db } from '@/db'
 import { games, players, rosters, rsvps } from '@/db/schema'
 import { eq } from 'drizzle-orm'
 import { getActiveRoster } from '@/domain/rsvpManager'
-import { getGameStats } from '@/domain/statsRepository'
+import { getGameStats, upsertPlayerGameStats } from '@/domain/statsRepository'
 import { computeDerivedStats, ZERO_COUNTS } from '@/domain/gameStats'
 import type { GameStatCounts } from '@/domain/gameStats'
+
+const COUNT_FIELDS: (keyof GameStatCounts)[] = [
+  's1b', 's2b', 's3b', 'hr',
+  'bb', 'k', 'fo', 'fc', 'go', 'sf',
+  'rbi', 'r',
+]
+
+function isNonNegativeInteger(value: unknown): value is number {
+  return typeof value === 'number' && Number.isInteger(value) && value >= 0
+}
 
 export async function GET(
   _req: Request,
@@ -76,6 +86,61 @@ export async function GET(
       }
     })
     .sort((a, b) => a.name.localeCompare(b.name))
+
+  return Response.json(result)
+}
+
+export async function PUT(
+  request: Request,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const { id: gameId } = await params
+
+  const [game] = await db.select().from(games).where(eq(games.id, gameId))
+  if (!game) {
+    return Response.json({ error: 'Game not found' }, { status: 404 })
+  }
+
+  const body = await request.json()
+
+  if (!body || !Array.isArray(body.stats)) {
+    return Response.json({ error: 'Body must be { stats: Array<{ playerId, s1b, s2b, ... }> }' }, { status: 400 })
+  }
+
+  for (const item of body.stats) {
+    for (const field of COUNT_FIELDS) {
+      if (!isNonNegativeInteger(item[field])) {
+        return Response.json(
+          { error: `Field "${field}" for player "${item.playerId}" must be a non-negative integer` },
+          { status: 400 }
+        )
+      }
+    }
+  }
+
+  for (const item of body.stats) {
+    const counts: GameStatCounts = {
+      s1b: item.s1b,
+      s2b: item.s2b,
+      s3b: item.s3b,
+      hr: item.hr,
+      bb: item.bb,
+      k: item.k,
+      fo: item.fo,
+      fc: item.fc,
+      go: item.go,
+      sf: item.sf,
+      rbi: item.rbi,
+      r: item.r,
+    }
+    await upsertPlayerGameStats(gameId, item.playerId, counts)
+  }
+
+  const rows = await getGameStats(gameId)
+  const result = rows.map((row) => ({
+    ...row,
+    ...computeDerivedStats(row),
+  }))
 
   return Response.json(result)
 }
