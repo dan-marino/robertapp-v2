@@ -40,6 +40,14 @@ export interface SeasonStatResult extends GameStatCounts, DerivedStats {
   g: number
 }
 
+// ─── Zero Value ───────────────────────────────────────────────────────────────
+
+export const ZERO_COUNTS: GameStatCounts = {
+  s1b: 0, s2b: 0, s3b: 0, hr: 0,
+  bb: 0, k: 0, fo: 0, fc: 0, go: 0, sf: 0,
+  rbi: 0, r: 0,
+}
+
 // ─── Pure Computation Functions ───────────────────────────────────────────────
 
 /** AB = s1b + s2b + s3b + hr + k + fo + fc + go (BB and SF excluded per ADR-0002) */
