@@ -5,6 +5,7 @@ import { games, players, rosters, seasons } from '@/db/schema'
 import { eq } from 'drizzle-orm'
 import RosterManager from './RosterManager'
 import GameCreator from './GameCreator'
+import SeasonStatsTable from './SeasonStatsTable'
 
 export default async function SeasonPage({
   params,
@@ -69,6 +70,8 @@ export default async function SeasonPage({
         )}
         <GameCreator seasonId={id} />
       </section>
+
+      <SeasonStatsTable seasonId={id} gameIds={seasonGames.map((g) => g.id)} />
 
       <RosterManager seasonId={id} initialRoster={roster} initialPool={pool} />
     </div>
