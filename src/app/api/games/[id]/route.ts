@@ -1,6 +1,6 @@
 import { db } from '@/db'
-import { games } from '@/db/schema'
-import { eq } from 'drizzle-orm'
+import { battingHistory, battingSlots, fieldingSlots, gameStats, games, players, rsvps } from '@/db/schema'
+import { and, eq } from 'drizzle-orm'
 
 export async function GET(
   _req: Request,
@@ -73,4 +73,41 @@ export async function PUT(
     .returning()
 
   return Response.json(updated)
+}
+
+export async function DELETE(
+  _req: Request,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const { id } = await params
+
+  const [game] = await db.select().from(games).where(eq(games.id, id))
+  if (!game) {
+    return Response.json({ error: 'Game not found' }, { status: 404 })
+  }
+
+  // Find guest player IDs before deleting RSVPs
+  const guestRsvps = await db
+    .select({ playerId: players.id })
+    .from(rsvps)
+    .innerJoin(players, and(eq(players.id, rsvps.playerId), eq(players.isGuest, true)))
+    .where(eq(rsvps.gameId, id))
+
+  const guestIds = guestRsvps.map((r) => r.playerId)
+
+  // Cascade delete all game-scoped records
+  await db.delete(gameStats).where(eq(gameStats.gameId, id))
+  await db.delete(fieldingSlots).where(eq(fieldingSlots.gameId, id))
+  await db.delete(battingSlots).where(eq(battingSlots.gameId, id))
+  await db.delete(battingHistory).where(eq(battingHistory.gameId, id))
+  await db.delete(rsvps).where(eq(rsvps.gameId, id))
+
+  // Delete guest players (game-scoped, no longer needed)
+  for (const guestId of guestIds) {
+    await db.delete(players).where(and(eq(players.id, guestId), eq(players.isGuest, true)))
+  }
+
+  await db.delete(games).where(eq(games.id, id))
+
+  return new Response(null, { status: 204 })
 }

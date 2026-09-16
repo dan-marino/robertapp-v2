@@ -5,6 +5,7 @@ import { games, players, rosters, seasons } from '@/db/schema'
 import { eq } from 'drizzle-orm'
 import RosterManager from './RosterManager'
 import GameCreator from './GameCreator'
+import GameList from './GameList'
 import SeasonStatsTable from './SeasonStatsTable'
 
 export default async function SeasonPage({
@@ -51,23 +52,7 @@ export default async function SeasonPage({
         <h2 className="text-sm font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wide mb-3">
           Games
         </h2>
-        {seasonGames.length > 0 && (
-          <ul className="divide-y divide-zinc-100 dark:divide-zinc-800 border border-zinc-100 dark:border-zinc-800 rounded-lg overflow-hidden mb-4">
-            {seasonGames.map((game) => (
-              <li key={game.id}>
-                <Link
-                  href={`/games/${game.id}`}
-                  className="flex items-center justify-between px-4 py-3 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors"
-                >
-                  <span className="text-sm font-medium">{game.date}</span>
-                  <span className="text-xs text-zinc-400 dark:text-zinc-500">
-                    {game.inningCount} inn · {game.mode}
-                  </span>
-                </Link>
-              </li>
-            ))}
-          </ul>
-        )}
+        <GameList initialGames={seasonGames} />
         <GameCreator seasonId={id} />
       </section>
 
