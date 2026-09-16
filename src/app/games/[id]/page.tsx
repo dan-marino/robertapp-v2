@@ -6,6 +6,7 @@ import { eq, inArray } from 'drizzle-orm'
 import RSVPManager from './RSVPManager'
 import ModeToggle from './ModeToggle'
 import GameEditor from './GameEditor'
+import StatsTab from './StatsTab'
 import type { RSVPStatus } from '@/domain/types'
 
 export default async function GamePage({
@@ -107,6 +108,13 @@ export default async function GamePage({
             </Link>
           </div>
         )}
+      </section>
+
+      <section className="mt-10">
+        <h2 className="text-sm font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wide mb-3">
+          Stats
+        </h2>
+        <StatsTab gameId={id} />
       </section>
     </div>
   )
