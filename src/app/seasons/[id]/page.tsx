@@ -38,7 +38,7 @@ export default async function SeasonPage({
     .where(eq(players.isGuest, false))
 
   return (
-    <div className="max-w-2xl mx-auto px-4 py-8">
+    <div className="max-w-6xl mx-auto px-4 py-8">
       <div className="mb-6">
         <Link href="/" className="text-sm text-zinc-500 dark:text-zinc-400 hover:text-zinc-800 dark:hover:text-zinc-200">
           ← All seasons

@@ -18,7 +18,7 @@ export default async function PlayersPage() {
   )
 
   return (
-    <div className="max-w-2xl mx-auto px-4 py-8">
+    <div className="max-w-6xl mx-auto px-4 py-8">
       <h1 className="text-2xl font-semibold mb-8">Players</h1>
       <PlayerList initialPlayers={allPlayers} prefsByPlayer={prefsByPlayer} />
     </div>

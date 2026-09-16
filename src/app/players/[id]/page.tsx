@@ -21,7 +21,7 @@ export default async function PlayerPage({
     .where(eq(positionPreferences.playerId, id))
 
   return (
-    <div className="max-w-2xl mx-auto px-4 py-8">
+    <div className="max-w-6xl mx-auto px-4 py-8">
       <h1 className="text-2xl font-semibold mb-8">{player.name}</h1>
 
       <section className="mb-10">

@@ -58,7 +58,7 @@ export default async function GamePage({
   const hasLineup = existingLineup.length > 0
 
   return (
-    <div className="max-w-2xl mx-auto px-4 py-8">
+    <div className="max-w-6xl mx-auto px-4 py-8">
       <div className="mb-6">
         <Link
           href={`/seasons/${game.seasonId}`}

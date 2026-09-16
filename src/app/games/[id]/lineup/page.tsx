@@ -37,7 +37,7 @@ export default async function LineupPage({
   const hasLineup = fs.length > 0 || bs.length > 0
 
   return (
-    <div className="max-w-4xl mx-auto px-4 py-8">
+    <div className="max-w-6xl mx-auto px-4 py-8">
       <div className="mb-6">
         <Link href={`/games/${gameId}`} className="text-sm text-zinc-500 dark:text-zinc-400 hover:text-zinc-800 dark:hover:text-zinc-200">
           ← {game.date}

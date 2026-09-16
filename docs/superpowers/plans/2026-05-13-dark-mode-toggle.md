@@ -259,7 +259,7 @@ export default function RootLayout({
       <body className="min-h-full flex flex-col bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100">
         <Providers>
           <nav className="border-b border-zinc-100 dark:border-zinc-800">
-            <div className="max-w-2xl mx-auto px-4 py-3 flex items-center gap-6">
+            <div className="max-w-6xl mx-auto px-4 py-3 flex items-center gap-6">
               <Link
                 href="/"
                 className="text-sm font-medium text-zinc-900 dark:text-zinc-100 hover:text-zinc-600 dark:hover:text-zinc-300 transition-colors"
@@ -351,7 +351,7 @@ export default function Home() {
   }
 
   return (
-    <div className="max-w-2xl mx-auto px-4 py-8">
+    <div className="max-w-6xl mx-auto px-4 py-8">
       <h1 className="text-2xl font-semibold mb-8">Softball Lineup Generator</h1>
 
       <section className="mb-10">
@@ -473,7 +473,7 @@ export default async function SeasonPage({
     .where(eq(players.isGuest, false))
 
   return (
-    <div className="max-w-2xl mx-auto px-4 py-8">
+    <div className="max-w-6xl mx-auto px-4 py-8">
       <div className="mb-6">
         <Link href="/" className="text-sm text-zinc-500 dark:text-zinc-400 hover:text-zinc-800 dark:hover:text-zinc-200">
           ← All seasons
@@ -923,7 +923,7 @@ export default async function GamePage({
   const hasLineup = existingLineup.length > 0
 
   return (
-    <div className="max-w-2xl mx-auto px-4 py-8">
+    <div className="max-w-6xl mx-auto px-4 py-8">
       <div className="mb-6">
         <Link
           href={`/seasons/${game.seasonId}`}
@@ -2538,7 +2538,7 @@ export default async function PlayerPage({
     .where(eq(positionPreferences.playerId, id))
 
   return (
-    <div className="max-w-2xl mx-auto px-4 py-8">
+    <div className="max-w-6xl mx-auto px-4 py-8">
       <h1 className="text-2xl font-semibold mb-8">{player.name}</h1>
 
       <section className="mb-10">
