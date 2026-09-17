@@ -1,5 +1,5 @@
 import { db } from '@/db'
-import { games, players, rosters, rsvps } from '@/db/schema'
+import { battingSlots, games, players, rosters, rsvps } from '@/db/schema'
 import { eq } from 'drizzle-orm'
 import { getActiveRoster } from '@/domain/rsvpManager'
 import { getGameStats, upsertPlayerGameStats } from '@/domain/statsRepository'
@@ -54,38 +54,66 @@ export async function GET(
   const statRows = await getGameStats(gameId)
   const statMap = new Map(statRows.map((row) => [row.playerId, row]))
 
+  // Get batting order for this game
+  const slotRows = await db
+    .select()
+    .from(battingSlots)
+    .where(eq(battingSlots.gameId, gameId))
+  const slotMap = new Map(slotRows.map((s) => [s.playerId, s]))
+
   // Build response: one entry per active player, zeroed if no row exists
-  const result = activePlayers
-    .map((player) => {
-      const row = statMap.get(player.id)
-      const counts: GameStatCounts = row
-        ? {
-            s1b: row.s1b,
-            s2b: row.s2b,
-            s3b: row.s3b,
-            hr: row.hr,
-            bb: row.bb,
-            k: row.k,
-            fo: row.fo,
-            fc: row.fc,
-            go: row.go,
-            sf: row.sf,
-            rbi: row.rbi,
-            r: row.r,
-          }
-        : { ...ZERO_COUNTS }
+  const mapped = activePlayers.map((player) => {
+    const row = statMap.get(player.id)
+    const counts: GameStatCounts = row
+      ? {
+          s1b: row.s1b,
+          s2b: row.s2b,
+          s3b: row.s3b,
+          hr: row.hr,
+          bb: row.bb,
+          k: row.k,
+          fo: row.fo,
+          fc: row.fc,
+          go: row.go,
+          sf: row.sf,
+          rbi: row.rbi,
+          r: row.r,
+        }
+      : { ...ZERO_COUNTS }
 
-      const derived = computeDerivedStats(counts)
+    const derived = computeDerivedStats(counts)
+    const slot = slotMap.get(player.id)
 
-      return {
-        playerId: player.id,
-        name: player.name,
-        isGuest: player.isGuest,
-        ...counts,
-        ...derived,
-      }
-    })
+    return {
+      playerId: player.id,
+      name: player.name,
+      isGuest: player.isGuest,
+      _slot: slot ?? null,
+      ...counts,
+      ...derived,
+    }
+  })
+
+  // Sort by lineup order matching the game mode; players not in the lineup go last (alphabetically)
+  const inLineup = mapped.filter((p) => p._slot !== null)
+  const notInLineup = mapped
+    .filter((p) => p._slot === null)
     .sort((a, b) => a.name.localeCompare(b.name))
+
+  if (game.mode === 'Split') {
+    const guys = inLineup
+      .filter((p) => p._slot!.genderGroup === 'M')
+      .sort((a, b) => a._slot!.orderIndex - b._slot!.orderIndex)
+    const girls = inLineup
+      .filter((p) => p._slot!.genderGroup === 'F')
+      .sort((a, b) => a._slot!.orderIndex - b._slot!.orderIndex)
+    inLineup.length = 0
+    inLineup.push(...guys, ...girls)
+  } else {
+    inLineup.sort((a, b) => a._slot!.orderIndex - b._slot!.orderIndex)
+  }
+
+  const result = [...inLineup, ...notInLineup].map(({ _slot, ...rest }) => rest)
 
   return Response.json(result)
 }
