@@ -61,6 +61,8 @@
 | **Lineup** | The complete game plan for a Game: one FieldingGrid plus one or two BattingOrders | Plan, schedule |
 | **LineupGenerator** | The thin orchestrator that calls the Fielding Assignment Engine then the Batting Order Engine and returns a complete Lineup | Generator, builder |
 | **Violation** | A constraint breach detected by the Constraint Validator, classified as `error` (hard block) or `warning` (overrideable) | Error (alone — too generic), issue, problem |
+| **Bench** | A Player who has a BattingSlot for a Game but zero FieldingSlots; they bat but do not field. A valid post-sync state that the Coach resolves manually via the swap grid. | Sit out, unassigned |
+| **LineupSync** | A Coach-triggered action that diffs the current Lineup against current RSVPs and applies additions and removals without regenerating: newly Present players gain a BattingSlot at the bottom of the order (zero FieldingSlots); newly Absent players lose all their slots. Requires confirmation if an Absent player still holds FieldingSlots. | Refresh, update roster |
 
 ---
 

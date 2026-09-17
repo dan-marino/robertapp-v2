@@ -5,6 +5,7 @@ import { games, players, fieldingSlots, battingSlots, seasons } from '@/db/schem
 import { eq, inArray } from 'drizzle-orm'
 import GenerateLineupButton from './GenerateLineupButton'
 import ReshuffleButton from './ReshuffleButton'
+import SyncButton from './SyncButton'
 import LineupSwapGrid from './LineupSwapGrid'
 
 export default async function LineupPage({
@@ -61,6 +62,7 @@ export default async function LineupPage({
               Export CSV
             </a>
           )}
+          <SyncButton gameId={gameId} />
           {hasLineup && <ReshuffleButton gameId={gameId} />}
           <GenerateLineupButton gameId={gameId} />
         </div>
