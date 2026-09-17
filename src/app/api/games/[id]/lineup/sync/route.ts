@@ -1,5 +1,5 @@
 import { db } from '@/db'
-import { games, players, rosters, rsvps, fieldingSlots, battingSlots } from '@/db/schema'
+import { games, players, rosters, rsvps, fieldingSlots, battingSlots, gameStats } from '@/db/schema'
 import { and, eq, inArray } from 'drizzle-orm'
 import { computeSyncDiff } from '@/domain/syncLineup'
 import type { RSVPStatus, GenderGroup, Position } from '@/domain/types'
@@ -85,18 +85,34 @@ export async function POST(
 
   // Check confirmation requirement
   const removedWithSlots = diff.toRemove.filter((r) => r.hadFieldingSlots)
-  if (removedWithSlots.length > 0 && !confirm) {
+
+  const removeIds = diff.toRemove.map((r) => r.playerId)
+
+  const statRows = removeIds.length > 0
+    ? await db.select().from(gameStats).where(
+        and(eq(gameStats.gameId, gameId), inArray(gameStats.playerId, removeIds))
+      )
+    : []
+
+  const removedWithStats = statRows
+    .filter((s) =>
+      s.s1b + s.s2b + s.s3b + s.hr + s.bb + s.k +
+      s.fo + s.fc + s.go + s.sf + s.rbi + s.r > 0
+    )
+    .map((s) => toNamedRef(s.playerId))
+
+  if ((removedWithSlots.length > 0 || removedWithStats.length > 0) && !confirm) {
     return Response.json(
       {
         needsConfirmation: true,
         removedWithSlots: removedWithSlots.map((r) => toNamedRef(r.playerId)),
+        removedWithStats,
       },
       { status: 409 }
     )
   }
 
   // Apply removals
-  const removeIds = diff.toRemove.map((r) => r.playerId)
   if (removeIds.length > 0) {
     await Promise.all([
       db.delete(battingSlots).where(
@@ -104,6 +120,9 @@ export async function POST(
       ),
       db.delete(fieldingSlots).where(
         and(eq(fieldingSlots.gameId, gameId), inArray(fieldingSlots.playerId, removeIds))
+      ),
+      db.delete(gameStats).where(
+        and(eq(gameStats.gameId, gameId), inArray(gameStats.playerId, removeIds))
       ),
     ])
   }

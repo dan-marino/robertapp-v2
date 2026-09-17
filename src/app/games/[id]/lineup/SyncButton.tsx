@@ -8,11 +8,16 @@ interface RemovedPlayer {
   name: string
 }
 
+interface ConfirmState {
+  removedWithSlots: RemovedPlayer[]
+  removedWithStats: RemovedPlayer[]
+}
+
 export default function SyncButton({ gameId }: { gameId: string }) {
   const router = useRouter()
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [pendingConfirm, setPendingConfirm] = useState<RemovedPlayer[] | null>(null)
+  const [pendingConfirm, setPendingConfirm] = useState<ConfirmState | null>(null)
 
   async function doSync(confirm: boolean) {
     setLoading(true)
@@ -27,7 +32,10 @@ export default function SyncButton({ gameId }: { gameId: string }) {
     if (res.status === 409) {
       const body = await res.json().catch(() => ({}))
       if (body.needsConfirmation) {
-        setPendingConfirm(body.removedWithSlots)
+        setPendingConfirm({
+          removedWithSlots: body.removedWithSlots ?? [],
+          removedWithStats: body.removedWithStats ?? [],
+        })
       } else {
         setError('Unexpected conflict')
       }
@@ -73,19 +81,36 @@ export default function SyncButton({ gameId }: { gameId: string }) {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
           <div className="bg-white dark:bg-zinc-900 rounded-lg shadow-xl p-6 max-w-sm w-full mx-4">
             <h2 className="text-base font-semibold text-zinc-900 dark:text-zinc-100 mb-2">
-              Remove players with fielding assignments?
+              Remove players with recorded data?
             </h2>
-            <p className="text-sm text-zinc-500 dark:text-zinc-400 mb-4">
-              The following players are still assigned to innings. Their fielding slots will be
-              removed and those positions will be lost.
-            </p>
-            <ul className="mb-5 space-y-1">
-              {pendingConfirm.map((p) => (
-                <li key={p.id} className="text-sm font-medium text-zinc-800 dark:text-zinc-200">
-                  {p.name}
-                </li>
-              ))}
-            </ul>
+            {pendingConfirm.removedWithSlots.length > 0 && (
+              <>
+                <p className="text-sm text-zinc-500 dark:text-zinc-400 mb-2">
+                  The following players are still assigned to innings. Their fielding slots will be lost.
+                </p>
+                <ul className="mb-4 space-y-1">
+                  {pendingConfirm.removedWithSlots.map((p) => (
+                    <li key={p.id} className="text-sm font-medium text-zinc-800 dark:text-zinc-200">
+                      {p.name}
+                    </li>
+                  ))}
+                </ul>
+              </>
+            )}
+            {pendingConfirm.removedWithStats.length > 0 && (
+              <>
+                <p className="text-sm text-zinc-500 dark:text-zinc-400 mb-2">
+                  The following players have recorded stats that will be permanently deleted.
+                </p>
+                <ul className="mb-4 space-y-1">
+                  {pendingConfirm.removedWithStats.map((p) => (
+                    <li key={p.id} className="text-sm font-medium text-zinc-800 dark:text-zinc-200">
+                      {p.name}
+                    </li>
+                  ))}
+                </ul>
+              </>
+            )}
             <div className="flex gap-2 justify-end">
               <button
                 onClick={handleCancel}
